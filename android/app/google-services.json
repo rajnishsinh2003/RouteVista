@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "325074376387",
+    "project_id": "routevista-96fac",
+    "storage_bucket": "routevista-96fac.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:325074376387:android:e14bcfe1adc4919544b476",
+        "android_client_info": {
+          "package_name": "com.example.routevista"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAG_A5VoQBndXxY0U1tpZJREP16XQ_gyVE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
