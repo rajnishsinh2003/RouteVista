@@ -33,7 +33,7 @@
 
 ## 📸 Screenshots
 OnBoarding
-<img width="450" height="1000" alt="Onboarding-1" src="https://github.com/user-attachments/assets/3b4a66bc-45ec-4ace-8e31-97fd9d0a92dc" />
+<center><img width="450" height="1000" alt="Onboarding-1" src="https://github.com/user-attachments/assets/3b4a66bc-45ec-4ace-8e31-97fd9d0a92dc" /></center>
 <img width="978" height="2100" alt="Onboarding" src="https://github.com/user-attachments/assets/ef25a4b2-8973-4465-8021-c55adafb57a7" />
 Home
 <img width="978" height="2100" alt="Home" src="https://github.com/user-attachments/assets/b491c26c-a7e5-446d-a285-b8a4a60e3e2f" />
