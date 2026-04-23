@@ -35,23 +35,36 @@
 OnBoarding
 <p align="center">
 <img width="450" height="1000" alt="Onboarding-1" src="https://github.com/user-attachments/assets/3b4a66bc-45ec-4ace-8e31-97fd9d0a92dc" />
-<img width="978" height="2100" alt="Onboarding" src="https://github.com/user-attachments/assets/ef25a4b2-8973-4465-8021-c55adafb57a7" />
+<img width="450" height="1000" alt="Onboarding" src="https://github.com/user-attachments/assets/ef25a4b2-8973-4465-8021-c55adafb57a7" />
 </p>
 Home
-<img width="978" height="2100" alt="Home" src="https://github.com/user-attachments/assets/b491c26c-a7e5-446d-a285-b8a4a60e3e2f" />
+<p align="center">
+<img width="450" height="1000" alt="Home" src="https://github.com/user-attachments/assets/b491c26c-a7e5-446d-a285-b8a4a60e3e2f" />
+</p>
 Quick Services
-<img width="978" height="2100" alt="Quick-Services" src="https://github.com/user-attachments/assets/8cab2a5d-9074-48c3-a6b8-5b9ea62760fc" />
+<p align="center">
+<img width="450" height="1000" alt="Quick-Services" src="https://github.com/user-attachments/assets/8cab2a5d-9074-48c3-a6b8-5b9ea62760fc" />
+</p>
 RouteVista-AI
-<img width="978" height="2100" alt="RouteVista-AI" src="https://github.com/user-attachments/assets/7a36f3b0-501d-48e9-8388-57b307fd9981" />
+<p align="center">
+<img width="450" height="1000" alt="RouteVista-AI" src="https://github.com/user-attachments/assets/7a36f3b0-501d-48e9-8388-57b307fd9981" />
+</p>
 Saved 
-<img width="978" height="2100" alt="Saved-Screen" src="https://github.com/user-attachments/assets/13969ab0-3e60-4a4d-9fc6-8da09872cd04" />
+<p align="center">
+<img width="450" height="1000" alt="Saved-Screen" src="https://github.com/user-attachments/assets/13969ab0-3e60-4a4d-9fc6-8da09872cd04" />
+</p>
 Weather
-<img width="978" height="2100" alt="Weather" src="https://github.com/user-attachments/assets/d8bb22f2-63d9-464a-b7bc-07845eaa1b95" />
+<p align="center">
+<img width="450" height="1000" alt="Weather" src="https://github.com/user-attachments/assets/d8bb22f2-63d9-464a-b7bc-07845eaa1b95" />
+</p>
 Monthly Planner
-<img width="978" height="2100" alt="Monthly-Tour-Planner" src="https://github.com/user-attachments/assets/874b0ac2-6ef8-4b6c-bf04-71c6f06efddd" />
+<p align="center">
+<img width="450" height="1000" alt="Monthly-Tour-Planner" src="https://github.com/user-attachments/assets/874b0ac2-6ef8-4b6c-bf04-71c6f06efddd" />
+</p>
 Profile
-<img width="978" height="2100" alt="Profile" src="https://github.com/user-attachments/assets/53ccae4a-dcdd-4cf5-92ca-651c82676f9c" />
-
+<p align="center">
+<img width="450" height="1000" alt="Profile" src="https://github.com/user-attachments/assets/53ccae4a-dcdd-4cf5-92ca-651c82676f9c" />
+</p>
 
 ## 🛠️ Tech Stack
 
