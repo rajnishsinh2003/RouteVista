@@ -113,10 +113,10 @@ class _WeatherScreenState extends State<WeatherScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF065A60),
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         title: Text('Weather', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         elevation: 0,
       ),
@@ -222,7 +222,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF1A1A2E),
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -239,16 +239,16 @@ class _WeatherScreenState extends State<WeatherScreen> {
                                 margin: const EdgeInsets.only(right: 8),
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: Theme.of(context).cardColor,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.grey[200]!),
+                                  border: Border.all(color: Theme.of(context).dividerColor),
                                 ),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
                                       h['time'],
-                                      style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[600]),
+                                      style: GoogleFonts.poppins(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                                     ),
                                     const SizedBox(height: 4),
                                     const Icon(Icons.thermostat, color: Color(0xFF065A60), size: 20),
@@ -258,6 +258,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                                       style: GoogleFonts.poppins(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
+                                        color: Theme.of(context).colorScheme.onSurface,
                                       ),
                                     ),
                                   ],
@@ -277,7 +278,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -289,14 +290,14 @@ class _WeatherScreenState extends State<WeatherScreen> {
       ),
       child: Column(
         children: [
-          Text(label, style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600])),
+          Text(label, style: GoogleFonts.poppins(fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
           const SizedBox(height: 4),
           Text(
             value,
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF1A1A2E),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],

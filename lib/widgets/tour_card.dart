@@ -8,6 +8,8 @@ class TourCard extends StatelessWidget {
   final String imageUrl;
   final double rating;
   final bool isBookmarked;
+  final double? width;
+  final EdgeInsetsGeometry? margin;
   final VoidCallback? onTap;
   final VoidCallback? onBookmark;
 
@@ -18,6 +20,8 @@ class TourCard extends StatelessWidget {
     required this.imageUrl,
     required this.rating,
     this.isBookmarked = false,
+    this.width = 220,
+    this.margin,
     this.onTap,
     this.onBookmark,
   });
@@ -27,10 +31,10 @@ class TourCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 220,
-        margin: const EdgeInsets.only(left: 20, bottom: 8),
+        width: width,
+        margin: margin ?? const EdgeInsets.only(left: 20, bottom: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -91,7 +95,7 @@ class TourCard extends StatelessWidget {
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1A1A2E),
+                            color: const Color(0xFF1A1A2E), // Always dark on light rating badge
                           ),
                         ),
                       ],
@@ -137,7 +141,7 @@ class TourCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A2E),
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -153,7 +157,7 @@ class TourCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.poppins(
                             fontSize: 12,
-                            color: Colors.grey[500],
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                       ),

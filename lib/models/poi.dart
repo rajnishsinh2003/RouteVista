@@ -126,6 +126,7 @@ class VehicleDefaults {
   // Whether the vehicle is available for this distance
   static bool isAvailable(VehicleType v, double distanceKm) {
     if (v == VehicleType.bike && distanceKm > 100) return false;
+    if (v == VehicleType.luxuryBus && distanceKm < 50) return false; // Too short for luxury bus
     return true;
   }
 }

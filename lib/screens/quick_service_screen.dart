@@ -1,17 +1,19 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
+import 'place_detail_screen.dart';
 
 class QuickServiceScreen extends StatefulWidget {
-  final String serviceType; // restaurant, fuel, hospital, police
+  final String category;
   final IconData icon;
   final Color color;
 
   const QuickServiceScreen({
     super.key,
-    required this.serviceType,
+    required this.category,
     required this.icon,
     required this.color,
   });
@@ -21,99 +23,101 @@ class QuickServiceScreen extends StatefulWidget {
 }
 
 class _QuickServiceScreenState extends State<QuickServiceScreen> {
-  List<Map<String, dynamic>> _places = [];
+  List<Map<String, dynamic>> _results = [];
   bool _isLoading = true;
-  String _errorMessage = '';
-  Position? _currentPosition;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadNearbyPlaces();
+    _fetchNearbyServices();
   }
 
-  Future<void> _loadNearbyPlaces() async {
+  Future<void> _fetchNearbyServices() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
     try {
-      LocationPermission perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
-      }
+      Position position = await Geolocator.getCurrentPosition();
+      
+      // Overpass API Query
+      String tags = '';
+      if (widget.category == 'Hospitals') tags = '["amenity"="hospital"]';
+      else if (widget.category == 'Fuel') tags = '["amenity"="fuel"]';
+      else if (widget.category == 'Restaurants') tags = '["amenity"="restaurant"]';
+      else if (widget.category == 'Hotels') tags = '["tourism"="hotel"]';
+      else tags = '["amenity"="${widget.category.toLowerCase()}"]';
 
-      _currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
-      final amenityType = _getAmenityType(widget.serviceType);
-      final query = """
+      final query = '''
         [out:json][timeout:25];
-        node(around:10000,${_currentPosition!.latitude},${_currentPosition!.longitude})["amenity"~"$amenityType"];
-        out;
-      """;
+        (
+          node$tags(around:5000, ${position.latitude}, ${position.longitude});
+          way$tags(around:5000, ${position.latitude}, ${position.longitude});
+        );
+        out body;
+        >;
+        out skel qt;
+      ''';
 
-      final res = await http.post(
-        Uri.parse("https://overpass-api.de/api/interpreter"),
-        body: "data=${Uri.encodeComponent(query)}",
+      final response = await http.post(
+        Uri.parse('https://overpass-api.de/api/interpreter'),
+        body: query,
       );
 
-      if (res.statusCode == 200) {
-        final data = json.decode(res.body);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
         final elements = data['elements'] as List;
-
-        List<Map<String, dynamic>> places = [];
+        
+        List<Map<String, dynamic>> formatted = [];
         for (var e in elements) {
-          if (e['tags'] == null) continue;
-          final name = e['tags']['name'] ?? widget.serviceType.toUpperCase();
-          final lat = e['lat'] as double;
-          final lon = e['lon'] as double;
-          final dist = Geolocator.distanceBetween(
-            _currentPosition!.latitude,
-            _currentPosition!.longitude,
-            lat,
-            lon,
-          );
-          places.add({
-            'name': name,
-            'lat': lat,
-            'lon': lon,
-            'distance': dist,
-            'address': e['tags']['addr:street'] ?? e['tags']['addr:city'] ?? 'Nearby',
-            'phone': e['tags']['phone'] ?? e['tags']['contact:phone'] ?? '',
+          if (e['tags'] != null) {
+            final tags = e['tags'];
+            final lat = e['lat'] ?? (e['center'] != null ? e['center']['lat'] : null);
+            final lon = e['lon'] ?? (e['center'] != null ? e['center']['lon'] : null);
+            
+            if (lat != null && lon != null) {
+              double distance = Geolocator.distanceBetween(
+                position.latitude, position.longitude, lat, lon
+              ) / 1000;
+
+              formatted.add({
+                'name': tags['name'] ?? 'Unnamed ${widget.category}',
+                'location': tags['addr:street'] ?? 'Nearby ${_getCity(tags)}',
+                'lat': lat,
+                'lon': lon,
+                'distance': distance,
+                'category': widget.category,
+                'tags': tags,
+              });
+            }
+          }
+        }
+        
+        formatted.sort((a, b) => (a['distance'] as double).compareTo(b['distance'] as double));
+
+        if (mounted) {
+          setState(() {
+            _results = formatted;
+            _isLoading = false;
           });
         }
-
-        places.sort((a, b) => (a['distance'] as double).compareTo(b['distance'] as double));
-
-        setState(() {
-          _places = places.take(20).toList();
-          _isLoading = false;
-        });
       } else {
+        throw Exception('Failed to fetch services');
+      }
+    } catch (e) {
+      if (mounted) {
         setState(() {
-          _errorMessage = 'Failed to load places';
+          _error = 'Could not find nearby ${widget.category}. Please check your connection and GPS.';
           _isLoading = false;
         });
       }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Error: Unable to find nearby ${widget.serviceType}s. Please check your location settings.';
-        _isLoading = false;
-      });
     }
   }
 
-  String _getAmenityType(String serviceType) {
-    switch (serviceType.toLowerCase()) {
-      case 'restaurants':
-        return 'restaurant|cafe|fast_food';
-      case 'fuel stations':
-        return 'fuel';
-      case 'hospitals':
-        return 'hospital|clinic';
-      case 'police':
-        return 'police';
-      default:
-        return serviceType.toLowerCase();
-    }
+  String _getCity(Map tags) {
+    return tags['addr:city'] ?? tags['addr:suburb'] ?? 'Location';
   }
 
   @override
@@ -121,160 +125,163 @@ class _QuickServiceScreenState extends State<QuickServiceScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF065A60),
+        backgroundColor: widget.color,
         foregroundColor: Colors.white,
+        elevation: 0,
         title: Text(
-          'Nearby ${widget.serviceType}',
+          'Nearby ${widget.category}',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
         ),
-        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetchNearbyServices,
+          ),
+        ],
       ),
       body: _isLoading
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: widget.color),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Finding nearby ${widget.serviceType}...',
-                    style: GoogleFonts.poppins(color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            )
-          : _errorMessage.isNotEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.location_off, size: 64, color: Colors.grey[400]),
-                        const SizedBox(height: 16),
-                        Text(
-                          _errorMessage,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 14),
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              _isLoading = true;
-                              _errorMessage = '';
-                            });
-                            _loadNearbyPlaces();
-                          },
-                          icon: const Icon(Icons.refresh),
-                          label: Text('Retry', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: widget.color,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : _places.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(widget.icon, size: 64, color: Colors.grey[400]),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No ${widget.serviceType} found nearby',
-                            style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 16),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _places.length,
-                      itemBuilder: (context, index) {
-                        final place = _places[index];
-                        final distKm = (place['distance'] as double) / 1000;
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  color: widget.color.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Icon(widget.icon, color: widget.color, size: 24),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      place['name'],
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
-                                        color: const Color(0xFF1A1A2E),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      place['address'],
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 12,
-                                        color: Colors.grey[500],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: widget.color.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      '${distKm.toStringAsFixed(1)} km',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: widget.color,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+          ? _buildLoading()
+          : _error != null
+              ? _buildError()
+              : _results.isEmpty
+                  ? _buildEmpty()
+                  : _buildList(),
     );
+  }
+
+  Widget _buildLoading() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(color: widget.color),
+          const SizedBox(height: 16),
+          Text(
+            'Searching for ${widget.category.toLowerCase()}...',
+            style: GoogleFonts.poppins(color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildError() {
+    return Padding(
+      padding: const EdgeInsets.all(40),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+            const SizedBox(height: 16),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(color: Colors.grey[800]),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _fetchNearbyServices,
+              style: ElevatedButton.styleFrom(backgroundColor: widget.color, foregroundColor: Colors.white),
+              child: const Text('Try Again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(widget.icon, size: 64, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          Text(
+            'No ${widget.category.toLowerCase()} found nearby.',
+            style: GoogleFonts.poppins(color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _results.length,
+      itemBuilder: (context, index) {
+        final item = _results[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))
+            ],
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(12),
+            leading: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: widget.color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(widget.icon, color: widget.color),
+            ),
+            title: Text(
+              item['name'],
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 15),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item['location'], style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.directions, size: 14, color: widget.color),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${item['distance'].toStringAsFixed(1)} km away',
+                      style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: widget.color),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PlaceDetailScreen(
+                    name: item['name'],
+                    location: item['location'],
+                    imageUrl: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400', // Default service image
+                    rating: 4.0,
+                    category: widget.category,
+                    description: _generateDescription(item),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  String _generateDescription(Map item) {
+    final tags = item['tags'] as Map;
+    String desc = '${item['name']} is a ${widget.category.toLowerCase()} located in ${item['location']}. ';
+    if (tags['opening_hours'] != null) desc += 'Opening hours: ${tags['opening_hours']}. ';
+    if (tags['phone'] != null) desc += 'Phone: ${tags['phone']}. ';
+    if (tags['website'] != null) desc += 'Website: ${tags['website']}. ';
+    return desc;
   }
 }

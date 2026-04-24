@@ -15,20 +15,16 @@ class NavigationStep {
 
   factory NavigationStep.fromOsrm(Map<String, dynamic> step) {
     final maneuver = step['maneuver'] as Map<String, dynamic>? ?? {};
-    final locationArr = maneuver['location'] as List?;
-    final loc = locationArr != null && locationArr.length >= 2
-        ? LatLng(
-            (locationArr[1] as num).toDouble(),
-            (locationArr[0] as num).toDouble(),
-          )
-        : const LatLng(0, 0);
-
     final type = maneuver['type'] as String? ?? '';
     final modifier = maneuver['modifier'] as String? ?? '';
     final name = (step['name'] as String? ?? '').trim();
+    final langCode = step['langCode'] as String? ?? 'en-IN';
 
-    final instruction = _buildInstruction(type, modifier, name);
+    final instruction = _buildInstruction(type, modifier, name, langCode);
     final distance = (step['distance'] as num?)?.toDouble() ?? 0;
+
+    final locList = maneuver['location'] as List<dynamic>? ?? [0.0, 0.0];
+    final loc = LatLng(locList[1].toDouble(), locList[0].toDouble()); // OSRM is [lon, lat]
 
     return NavigationStep(
       instruction: instruction,
@@ -37,33 +33,139 @@ class NavigationStep {
     );
   }
 
-  static String _buildInstruction(String type, String modifier, String name) {
-    final dest = name.isNotEmpty ? ' onto $name' : '';
+  static String _buildInstruction(String type, String modifier, String name, String langCode) {
+    // Localization Mapping
+    final Map<String, Map<String, dynamic>> i18n = {
+      'en-IN': {
+        'left': 'Turn left',
+        'right': 'Turn right',
+        'sharp_left': 'Turn sharp left',
+        'sharp_right': 'Turn sharp right',
+        'slight_left': 'Keep slight left',
+        'slight_right': 'Keep slight right',
+        'uturn': 'Make a U-turn',
+        'continue': 'Continue',
+        'onto': ' onto ',
+        'head': 'Head towards ',
+        'start': 'Start navigation',
+        'arrive': 'You have arrived at your destination',
+        'merge': 'Merge',
+        'ramp_l': 'Take the ramp on the left',
+        'ramp_r': 'Take the ramp on the right',
+        'fork_l': 'Keep left at the fork',
+        'fork_r': 'Keep right at the fork',
+        'end_l': 'Turn left at the end of the road',
+        'end_r': 'Turn right at the end of the road',
+        'roundabout': 'At the roundabout, take ',
+        'exit': ' exit',
+        'next': 'the next',
+        'straight': 'Continue straight',
+      },
+      'hi-IN': {
+        'left': 'बाएँ मुड़ें',
+        'right': 'दाएँ मुड़ें',
+        'sharp_left': 'तेजी से बाएँ मुड़ें',
+        'sharp_right': 'तेजी से दाएँ मुड़ें',
+        'slight_left': 'हल्का बाएँ रहें',
+        'slight_right': 'हल्का दाएँ रहें',
+        'uturn': 'यू-टर्न लें',
+        'continue': 'जारी रखें',
+        'onto': ' पर ',
+        'head': 'की ओर चलें ',
+        'start': 'नेविगेशन शुरू करें',
+        'arrive': 'आप अपनी मंजिल पर पहुँच गए हैं',
+        'merge': 'मिलें',
+        'ramp_l': 'बाईं ओर के रैंप पर चढ़ें',
+        'ramp_r': 'दाईं ओर के रैंप पर चढ़ें',
+        'fork_l': 'कांटे पर बाएँ रहें',
+        'fork_r': 'कांटे पर दाएँ रहें',
+        'end_l': 'सड़क के अंत में बाएँ मुड़ें',
+        'end_r': 'सड़क के अंत में दाएँ मुड़ें',
+        'roundabout': 'चौराहे पर, टर्न लें ',
+        'exit': ' निकास',
+        'next': 'अगला',
+        'straight': 'सीधे चलते रहें',
+      },
+      'gu-IN': {
+        'left': 'ડાબે વળો',
+        'right': 'જમણે વળો',
+        'sharp_left': 'ઝડપથી ડાબે વળો',
+        'sharp_right': 'ઝડપથી જમણે વળો',
+        'slight_left': 'થોડા ડાબે રહો',
+        'slight_right': 'થોડા જમણે રહો',
+        'uturn': 'યુ-ટર્ન લો',
+        'continue': 'ચાલુ રાખો',
+        'onto': ' પર ',
+        'head': 'તરફ આગળ વધો ',
+        'start': 'નેવિગેશન શરૂ કરો',
+        'arrive': 'તમે તમારા ગંતવ્ય પર પહોંચી ગયા છો',
+        'merge': 'ભેગા થાઓ',
+        'ramp_l': 'ડાબી બાજુના રેમ્પ પર લો',
+        'ramp_r': 'જમણી બાજુના રેમ્પ પર લો',
+        'fork_l': 'ફોર્ક પર ડાબે રહો',
+        'fork_r': 'ફોર્ક પર જમણે રહો',
+        'end_l': 'રસ્તાના અંતે ડાબે વળો',
+        'end_r': 'રસ્તાના અંતે જમણે વળો',
+        'roundabout': 'રાઉન્ડઅબાઉટ પર, લો ',
+        'exit': ' એક્ઝિટ',
+        'next': 'આગળની',
+        'straight': 'સીધા આગળ વધો',
+      },
+      'ta-IN': {
+        'left': 'இடதுபுறம் திரும்பவும்',
+        'right': 'வலதுபுறம் திரும்பவும்',
+        'sharp_left': 'கடுமையாக இடதுபுறம் திரும்பவும்',
+        'sharp_right': 'கடுமையாக வலதுபுறம் திரும்பவும்',
+        'slight_left': 'சற்று இடதுபுறமாக செல்லவும்',
+        'slight_right': 'சற்று வலதுபுறமாக செல்லவும்',
+        'uturn': 'யூ-டர்ன் எடுக்கவும்',
+        'continue': 'தொடரவும்',
+        'onto': ' இல் ',
+        'head': 'நோக்கிச் செல்லுங்கள் ',
+        'start': 'வழிசெலுத்தலைத் தொடங்கவும்',
+        'arrive': 'உங்கள் இலக்கை அடைந்துவிட்டீர்கள்',
+        'merge': 'இணையுங்கள்',
+        'ramp_l': 'இடதுபுறம் உள்ள ராம்பை எடுக்கவும்',
+        'ramp_r': 'வலதுபுறம் உள்ள ராம்பை எடுக்கவும்',
+        'fork_l': 'முச்சந்தியில் இடதுபுறமாகவே செல்லவும்',
+        'fork_r': 'முச்சந்தியில் வலதுபுறமாகவே செல்லவும்',
+        'end_l': 'சாலையின் முடிவில் இடதுபுறம் திரும்பவும்',
+        'end_r': 'சாலையின் முடிவில் வலதுபுறம் திரும்பவும்',
+        'roundabout': 'வட்டச் சாலையில், எடுக்கவும் ',
+        'exit': ' வெளியேறு',
+        'next': 'அடுத்த',
+        'straight': 'நேராகத் தொடரவும்',
+      },
+    };
+
+    final Map<String, dynamic> t = i18n[langCode] ?? i18n['en-IN']!;
+
+    final dest = name.isNotEmpty ? '${t['onto']}$name' : '';
     switch (type) {
       case 'turn':
         switch (modifier) {
-          case 'left':        return 'Turn left$dest';
-          case 'right':       return 'Turn right$dest';
-          case 'sharp left':  return 'Turn sharp left$dest';
-          case 'sharp right': return 'Turn sharp right$dest';
-          case 'slight left': return 'Keep slight left$dest';
-          case 'slight right':return 'Keep slight right$dest';
-          case 'uturn':       return 'Make a U-turn$dest';
-          default:            return 'Continue$dest';
+          case 'left':        return '${t['left']}$dest';
+          case 'right':       return '${t['right']}$dest';
+          case 'sharp left':  return '${t['sharp_left']}$dest';
+          case 'sharp right': return '${t['sharp_right']}$dest';
+          case 'slight left': return '${t['slight_left']}$dest';
+          case 'slight right':return '${t['slight_right']}$dest';
+          case 'uturn':       return '${t['uturn']}$dest';
+          default:            return '${t['continue']}$dest';
         }
-      case 'depart':      return name.isNotEmpty ? 'Head towards $name' : 'Start navigation';
-      case 'arrive':      return 'You have arrived at your destination';
-      case 'merge':       return 'Merge$dest';
-      case 'ramp':        return modifier.contains('left') ? 'Take the ramp on the left' : 'Take the ramp on the right';
-      case 'fork':        return modifier.contains('left') ? 'Keep left at the fork' : 'Keep right at the fork';
-      case 'end of road': return modifier.contains('left') ? 'Turn left at the end of the road' : 'Turn right at the end of the road';
+      case 'depart':      return name.isNotEmpty ? '${t['head']}$name' : '${t['start']}';
+      case 'arrive':      return '${t['arrive']}';
+      case 'merge':       return '${t['merge']}$dest';
+      case 'ramp':        return modifier.contains('left') ? '${t['ramp_l']}' : '${t['ramp_r']}';
+      case 'fork':        return modifier.contains('left') ? '${t['fork_l']}' : '${t['fork_r']}';
+      case 'end of road': return modifier.contains('left') ? '${t['end_l']}' : '${t['end_r']}';
       case 'roundabout':
       case 'rotary':
-        final exit = (modifier.isNotEmpty) ? modifier : 'the next';
-        return 'At the roundabout, take $exit exit';
-      case 'continue':    return 'Continue straight$dest';
-      case 'new name':    return 'Continue$dest';
-      default:            return name.isNotEmpty ? 'Continue onto $name' : 'Continue straight';
+        final exitNum = (modifier.isNotEmpty) ? modifier : '${t['next']}';
+        return '${t['roundabout']}$exitNum${t['exit']}';
+      case 'continue':    return '${t['straight']}$dest';
+      case 'new name':    return '${t['continue']}$dest';
+      default:            return name.isNotEmpty ? '${t['continue']}$dest' : '${t['straight']}';
     }
   }
 

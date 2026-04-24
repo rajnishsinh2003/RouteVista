@@ -36,7 +36,7 @@ void main() {
 
   testWidgets('Fixing the crash', (WidgetTester tester) async {
     // UPDATED: Use RouteVistaApp instead of MyApp
-    await tester.pumpWidget(const RouteVistaApp());
+    await tester.pumpWidget(const RouteVistaApp(showOnboarding: false, alreadyLoggedIn: false));
     await tester.pumpAndSettle();
   });
 }

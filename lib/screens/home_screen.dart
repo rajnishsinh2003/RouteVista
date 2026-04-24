@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,6 +22,21 @@ import '../widgets/tour_card.dart';
 import '../widgets/hotel_card.dart';
 import '../widgets/category_chip.dart';
 import '../widgets/quick_action_tile.dart';
+import 'trip_history_screen.dart';
+import 'chatbot_screen.dart';
+import 'search_screen.dart';
+import '../services/notification_service.dart';
+import '../models/place_model.dart';
+import '../services/place_service.dart';
+import '../services/bookmark_service.dart';
+import 'state_places_screen.dart';
+import 'all_states_screen.dart';
+import 'trending_places_screen.dart';
+import 'flight_screen.dart';
+import 'train_screen.dart';
+import 'all_hotels_screen.dart';
+import '../services/hotel_service.dart';
+import '../models/hotel_model.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -38,6 +54,9 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentNavIndex = 0;
   String _selectedCategory = 'All';
   Set<String> _bookmarkedTours = {};
+  List<Map<String, dynamic>> _recentTrips = [];
+  Map<String, int> _categoryAffinity = {};
+  String _userName = 'Traveler';
 
   double? _sourceLat, _sourceLon;
   double? _destLat, _destLon;
@@ -50,139 +69,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _destDebounce;
   bool _isGettingLocation = false;
 
-  final List<Map<String, dynamic>> _tours = [
-    {
-      'name': 'Taj Mahal',
-      'location': 'Agra, Uttar Pradesh',
-      'image': 'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=400',
-      'rating': 4.9,
-      'category': 'Historical',
-      'description': 'The Taj Mahal is an ivory-white marble mausoleum on the right bank of the river Yamuna in Agra. It was commissioned in 1631 by the fifth Mughal emperor, Shah Jahan. A UNESCO World Heritage Site and one of the Seven Wonders of the World.',
-    },
-    {
-      'name': 'Goa Beaches',
-      'location': 'Goa, India',
-      'image': 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=400',
-      'rating': 4.7,
-      'category': 'Nature',
-      'description': 'Goa is renowned for its stunning beaches, vibrant nightlife, Portuguese heritage architecture, and delicious seafood cuisine.',
-    },
-    {
-      'name': 'Jaipur City Palace',
-      'location': 'Jaipur, Rajasthan',
-      'image': 'https://images.unsplash.com/photo-1599661046289-e31897846e41?w=400',
-      'rating': 4.6,
-      'category': 'Historical',
-      'description': 'The City Palace in Jaipur is a magnificent blend of Rajasthani and Mughal architecture built by Maharaja Sawai Jai Singh II.',
-    },
-    {
-      'name': 'Kerala Backwaters',
-      'location': 'Alleppey, Kerala',
-      'image': 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=400',
-      'rating': 4.8,
-      'category': 'Nature',
-      'description': 'The Kerala backwaters are a chain of brackish lagoons and lakes lying parallel to the Arabian Sea coast.',
-    },
-    {
-      'name': 'Varanasi Ghats',
-      'location': 'Varanasi, UP',
-      'image': 'https://images.unsplash.com/photo-1561361513-2d000a50f0dc?w=400',
-      'rating': 4.5,
-      'category': 'Religious',
-      'description': 'Varanasi, one of the oldest cities in the world, sits on the banks of the sacred River Ganges.',
-    },
-    {
-      'name': 'Golden Temple',
-      'location': 'Amritsar, Punjab',
-      'image': 'https://images.unsplash.com/photo-1514222134-b57cbb8ce073?w=400',
-      'rating': 4.9,
-      'category': 'Religious',
-      'description': 'The Harmandir Sahib, known as the Golden Temple, is the holiest Gurdwara of Sikhism.',
-    },
-    {
-      'name': 'Munnar Hills',
-      'location': 'Munnar, Kerala',
-      'image': 'https://images.unsplash.com/photo-1516690561799-46d8f74f9abf?w=400',
-      'rating': 4.6,
-      'category': 'Nature',
-      'description': 'Munnar is a hill station in the Western Ghats of Kerala. Known for its tea plantations and rolling green hills.',
-    },
-    {
-      'name': 'Delhi Street Food Tour',
-      'location': 'Old Delhi, Delhi',
-      'image': 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400',
-      'rating': 4.7,
-      'category': 'Food',
-      'description': 'Explore the bustling lanes of Old Delhi and taste the finest street food in India.',
-    },
-    {
-      'name': 'Hyderabadi Biryani Trail',
-      'location': 'Hyderabad, Telangana',
-      'image': 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400',
-      'rating': 4.8,
-      'category': 'Food',
-      'description': 'Follow the trail of the world-famous Hyderabadi Biryani across historic restaurants.',
-    },
-    {
-      'name': 'Mumbai Chaat Walk',
-      'location': 'Mumbai, Maharashtra',
-      'image': 'https://images.unsplash.com/photo-1606491956689-2ea866880049?w=400',
-      'rating': 4.5,
-      'category': 'Food',
-      'description': 'Walk through Mumbai\'s vibrant street food scene from Vada Pav to Pav Bhaji.',
-    },
-    {
-      'name': 'Heritage Rajasthan Stays',
-      'location': 'Rajasthan, India',
-      'image': 'https://images.unsplash.com/photo-1585468274952-66591eb14165?w=400',
-      'rating': 4.8,
-      'category': 'Hotels',
-      'description': 'Experience royal living in heritage havelis and palace hotels of Rajasthan.',
-    },
-    {
-      'name': 'Luxury Kerala Resorts',
-      'location': 'Kerala, India',
-      'image': 'https://images.unsplash.com/photo-1540541338287-41700207dee6?w=400',
-      'rating': 4.9,
-      'category': 'Hotels',
-      'description': 'Unwind at Kerala\'s finest luxury resorts nestled in the backwaters and tea hills.',
-    },
+  final List<String> _indianStates = const [
+    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+    'Delhi', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jammu Kashmir',
+    'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra',
+    'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+    'Rajasthan', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh',
+    'Uttarakhand', 'West Bengal'
   ];
 
-  final List<Map<String, dynamic>> _hotels = [
-    {
-      'name': 'The Oberoi Udaivilas',
-      'image': 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400',
-      'rating': 4.9,
-      'price': '₹12,000/night',
-      'location': 'Udaipur, Rajasthan',
-      'description': 'Set on the banks of Lake Pichola, The Oberoi Udaivilas is a luxury heritage hotel offering a truly regal experience.',
-    },
-    {
-      'name': 'Taj Lake Palace',
-      'image': 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=400',
-      'rating': 4.8,
-      'price': '₹9,500/night',
-      'location': 'Udaipur, Rajasthan',
-      'description': 'Seemingly floating on Lake Pichola, the Taj Lake Palace is an 18th-century architectural marvel.',
-    },
-    {
-      'name': 'ITC Grand Chola',
-      'image': 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=400',
-      'rating': 4.7,
-      'price': '₹8,200/night',
-      'location': 'Chennai, Tamil Nadu',
-      'description': 'Inspired by the grandeur of the Chola dynasty, ITC Grand Chola combines traditional architecture with modern luxury.',
-    },
-    {
-      'name': 'Leela Palace',
-      'image': 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400',
-      'rating': 4.6,
-      'price': '₹11,000/night',
-      'location': 'New Delhi',
-      'description': 'The Leela Palace New Delhi is known for its opulent interiors and impeccable butler service.',
-    },
-  ];
+  Future<List<HotelModel>>? _hotelsFuture;
+  String _userState = 'maharashtra';
 
   final List<Map<String, dynamic>> _categories = [
     {'icon': Icons.all_inclusive, 'label': 'All', 'color': const Color(0xFF065A60)},
@@ -193,16 +90,109 @@ class _HomeScreenState extends State<HomeScreen> {
     {'icon': Icons.hotel, 'label': 'Hotels', 'color': Colors.indigo},
   ];
 
-  List<Map<String, dynamic>> get _filteredTours {
-    if (_selectedCategory == 'All') return _tours;
-    return _tours.where((t) => t['category'] == _selectedCategory).toList();
-  }
+  List<Map<String, dynamic>> get _filteredTours => []; // Obsolete
 
   @override
   void initState() {
     super.initState();
     // FIX #1: Do NOT call _loadSavedRoute() — fields always start empty
-    _loadBookmarks();
+    _loadRecentTrips();
+    _listenToBookmarks();
+    _loadAffinity();
+    _fetchDashboardHotels();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    final localName = prefs.getString('user_name');
+    final fbName = FirebaseAuth.instance.currentUser?.displayName;
+    
+    if (mounted) {
+      setState(() {
+        if (localName != null && localName.trim().isNotEmpty) {
+          _userName = localName.trim();
+        } else if (fbName != null && fbName.trim().isNotEmpty) {
+          _userName = fbName.trim();
+        } else {
+          _userName = 'Traveler';
+        }
+      });
+    }
+  }
+
+  Future<void> _fetchDashboardHotels() async {
+    String stateName = 'maharashtra'; // fallback
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (serviceEnabled) {
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+        if (permission != LocationPermission.denied && permission != LocationPermission.deniedForever) {
+          final position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.low);
+          final url = Uri.parse('https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.latitude}&lon=${position.longitude}&zoom=10&addressdetails=1');
+          final res = await http.get(url, headers: {'User-Agent': 'RouteVista'});
+          if (res.statusCode == 200) {
+            final data = json.decode(res.body);
+            final addr = data['address'] ?? {};
+            final state = addr['state'] ?? addr['county'] ?? 'maharashtra';
+            stateName = state.toString();
+          }
+        }
+      }
+    } catch (_) {}
+    if (mounted) {
+      setState(() {
+        _userState = stateName;
+        _hotelsFuture = HotelService.getNearbyHotels(stateName, count: 5);
+      });
+    }
+  }
+
+  void _listenToBookmarks() {
+    BookmarkService.getBookmarkedPlaceIds().listen((ids) {
+      if (mounted) {
+        setState(() {
+          _bookmarkedTours = ids;
+        });
+      }
+    });
+  }
+
+  Future<void> _toggleBookmark(Map<String, dynamic> placeData) async {
+    await BookmarkService.toggleBookmark(placeData);
+    // The stream listener will update the UI
+  }
+
+  Future<void> _loadAffinity() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('category_affinity') ?? '{}';
+    if (mounted) {
+      setState(() {
+        _categoryAffinity = Map<String, int>.from(json.decode(raw));
+      });
+    }
+  }
+
+  Future<void> _trackActivity(String category) async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _categoryAffinity[category] = (_categoryAffinity[category] ?? 0) + 1;
+    });
+    await prefs.setString('category_affinity', json.encode(_categoryAffinity));
+  }
+
+  Future<void> _loadRecentTrips() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('saved_trips') ?? '[]';
+    if (mounted) {
+      setState(() {
+        final all = List<Map<String, dynamic>>.from(json.decode(raw));
+        _recentTrips = all.take(5).toList();
+      });
+    }
   }
 
   Future<void> _loadBookmarks() async {
@@ -248,6 +238,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onSourceChanged(String value) {
     if (value == '📍 Your Location' || _useCurrentLocation) return;
+    if (value.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _sourceSuggestions = [];
+          _showSourceSuggestions = true; // Show "Use Current Location" even if empty
+        });
+      }
+      return;
+    }
     _sourceDebounce?.cancel();
     _sourceDebounce = Timer(const Duration(milliseconds: 500), () async {
       if (value.length >= 2) {
@@ -255,12 +254,12 @@ class _HomeScreenState extends State<HomeScreen> {
         if (mounted) {
           setState(() {
             _sourceSuggestions = results;
-            _showSourceSuggestions = results.isNotEmpty;
+            _showSourceSuggestions = true;
             _useCurrentLocation = false;
           });
         }
       } else {
-        if (mounted) setState(() => _showSourceSuggestions = false);
+        if (mounted) setState(() => _showSourceSuggestions = true);
       }
     });
   }
@@ -425,6 +424,13 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     await prefs.setString('saved_trips', json.encode(trips.take(20).toList()));
 
+    // Notify user
+    NotificationService().showNotification(
+      id: 1,
+      title: '🛰️ Navigation Starting',
+      body: 'Heading to ${_destController.text}... Drive safely!',
+    );
+
     if (!mounted) return;
     Navigator.push(
       context,
@@ -442,55 +448,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Toggle bookmark functionality for tours
-  Future<void> _toggleBookmark(Map<String, dynamic> tour) async {
-    final id = tour['name'].toString().replaceAll(' ', '_').toLowerCase();
-    final prefs = await SharedPreferences.getInstance();
-    final placesJson = prefs.getString('saved_places') ?? '[]';
-    final places = List<Map<String, dynamic>>.from(json.decode(placesJson));
-
-    final isAlreadyBookmarked = _bookmarkedTours.contains(id);
-
-    if (isAlreadyBookmarked) {
-      places.removeWhere((p) => p['id'] == id);
-      setState(() {
-        _bookmarkedTours.remove(id);
-      });
-    } else {
-      places.insert(0, {
-        'id': id,
-        'name': tour['name'],
-        'location': tour['location'],
-        'image': tour['image'],
-        'rating': tour['rating'],
-        'category': tour['category'],
-        'description': tour['description'],
-        'savedAt': DateTime.now().toIso8601String(),
-      });
-      setState(() {
-        _bookmarkedTours.add(id);
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${tour['name']} saved to your places!',
-                style: GoogleFonts.poppins()),
-            backgroundColor: const Color(0xFF065A60),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-      }
-    }
-    await prefs.setString('saved_places', json.encode(places));
-    // Trigger saved screen to reload if needed
-    _savedScreenKey.currentState?.reload();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: IndexedStack(
         index: _currentNavIndex,
         children: [
@@ -502,6 +464,22 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       bottomNavigationBar: _buildBottomNav(),
+      floatingActionButton: _currentNavIndex == 0 
+          ? FloatingActionButton(
+              backgroundColor: const Color(0xFF00BFA6),
+              foregroundColor: Colors.white,
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset('assets/icon/icon.png', width: 30, height: 30, fit: BoxFit.contain),
+              ),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ChatbotScreen()),
+              ),
+            )
+          : null,
     );
   }
 
@@ -539,7 +517,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text('Hello, Traveler! 👋',
+                            Text('Hello, $_userName! 👋',
                                 style: GoogleFonts.poppins(fontSize: 14, color: Colors.white70)),
                             const SizedBox(height: 2),
                             Text('RouteVista',
@@ -559,9 +537,37 @@ class _HomeScreenState extends State<HomeScreen> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.notifications_outlined,
+                          icon: const Icon(Icons.history_rounded,
                               color: Colors.white, size: 22),
-                          onPressed: () {},
+                          tooltip: 'Trip History',
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const TripHistoryScreen()),
+                            ).then((_) => _loadRecentTrips());
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // 🔔 Notification Bell
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.notifications_none_rounded,
+                              color: Colors.white, size: 22),
+                          tooltip: 'Notifications',
+                          onPressed: () {
+                            NotificationService().showNotification(
+                              title: '🔔 RouteVista Updates',
+                              body: 'Stay tuned for weather alerts and trip reminders!',
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -590,132 +596,373 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
+              _buildSearchBar(),
+              const SizedBox(height: 20),
               _buildRoutePlannerCard(),
               const SizedBox(height: 24),
+              
+              // ── Explore by State ──────────────────────────────
+              SectionHeader(
+                title: 'Explore by State', 
+                emoji: '🗺️', 
+                onSeeAll: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AllStatesScreen(states: _indianStates),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
               SizedBox(
                 height: 44,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(left: 20),
-                  itemCount: _categories.length,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: _indianStates.length,
                   itemBuilder: (context, index) {
-                    final cat = _categories[index];
-                    return CategoryChip(
-                      icon: cat['icon'],
-                      label: cat['label'],
-                      color: cat['color'],
-                      isSelected: _selectedCategory == cat['label'],
-                      onTap: () => setState(() => _selectedCategory = cat['label']),
+                    final state = _indianStates[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => StatePlacesScreen(stateName: state),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).cardColor,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Theme.of(context).dividerColor),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            state,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ),
                     );
                   },
                 ),
               ),
-              const SizedBox(height: 24),
-              SectionHeader(title: 'Most Visited Tours', emoji: '🔥', onSeeAll: () {}),
-              const SizedBox(height: 8),
-              _filteredTours.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                      child: Center(
-                        child: Text(
-                          'No tours found for "$_selectedCategory" category',
-                          style: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 14),
-                        ),
+
+              const SizedBox(height: 32),
+              
+              // ── Trending in India ──────────────────────────────
+              SectionHeader(
+                title: 'Trending in India', 
+                emoji: '🔥', 
+                onSeeAll: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TrendingPlacesScreen(
+                        bookmarkedTours: _bookmarkedTours,
+                        onToggleBookmark: _toggleBookmark,
+                        onNavigate: (placeName) {
+                          setState(() {
+                            _destController.text = placeName;
+                            _destLat = null;
+                            _destLon = null;
+                          });
+                        },
                       ),
-                    )
-                  : SizedBox(
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              FutureBuilder<List<PlaceModel>>(
+                future: PlaceService.getTrendingPlaces(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SizedBox(
                       height: 220,
+                      child: Center(child: CircularProgressIndicator(color: Color(0xFF00BFA6))),
+                    );
+                  }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  List<PlaceModel> trendingPlaces = snapshot.data!;
+                  
+                  // Apply category filter
+                  if (_selectedCategory != 'All') {
+                    trendingPlaces = trendingPlaces.where((p) => p.category.toLowerCase() == _selectedCategory.toLowerCase()).toList();
+                  }
+                  
+                  if (trendingPlaces.isEmpty) {
+                    return SizedBox(
+                      height: 100,
+                      child: Center(child: Text('No $_selectedCategory places found.', style: GoogleFonts.poppins(color: Colors.grey))),
+                    );
+                  }
+                  
+                  return SizedBox(
+                    height: 220,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.only(left: 20),
+                      itemCount: trendingPlaces.length,
+                      itemBuilder: (context, index) {
+                        final place = trendingPlaces[index];
+                        final id = place.name.toLowerCase().replaceAll(' ', '_');
+                        final isBookmarked = _bookmarkedTours.contains(id);
+                        
+                        return TourCard(
+                          name: place.name,
+                          location: place.state,
+                          imageUrl: place.imageUrl,
+                          rating: place.rating,
+                          isBookmarked: isBookmarked,
+                          onBookmark: () => _toggleBookmark({
+                            'name': place.name,
+                            'location': place.state,
+                            'image': place.imageUrl,
+                            'rating': place.rating,
+                            'category': place.category,
+                            'description': place.description,
+                          }),
+                          onTap: () {
+                            PlaceService.updatePlaceDetailsIfNeeded(place);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PlaceDetailScreen(
+                                  name: place.name,
+                                  location: place.state,
+                                  imageUrl: place.imageUrl,
+                                  rating: place.rating,
+                                  category: place.category,
+                                  description: place.description,
+                                  highlights: place.highlights,
+                                  onSave: () => _toggleBookmark({
+                                     'name': place.name,
+                                     'location': place.state,
+                                     'image': place.imageUrl,
+                                     'rating': place.rating,
+                                     'category': place.category,
+                                     'description': place.description,
+                                  }),
+                                  onNavigate: () {
+                                    setState(() {
+                                      _destController.text = place.name;
+                                      _destLat = null;
+                                      _destLon = null;
+                                    });
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              // ── Popular Hotels ───────────────────────────
+              SectionHeader(
+                title: 'Hotels Near You', 
+                emoji: '🏨', 
+                onSeeAll: () {
+                  Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (_) => AllHotelsScreen(locationState: _userState))
+                  );
+                }
+              ),
+              const SizedBox(height: 8),
+              if (_hotelsFuture == null)
+                const SizedBox(
+                  height: 195,
+                  child: Center(child: CircularProgressIndicator(color: Color(0xFF065A60))),
+                )
+              else
+                FutureBuilder<List<HotelModel>>(
+                  future: _hotelsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const SizedBox(
+                        height: 195,
+                        child: Center(child: CircularProgressIndicator(color: Color(0xFF065A60))),
+                      );
+                    }
+                    final hotels = snapshot.data ?? [];
+                    if (hotels.isEmpty) {
+                      return const SizedBox(
+                        height: 195,
+                        child: Center(child: Text('No hotels found nearby.')),
+                      );
+                    }
+                    return SizedBox(
+                      height: 195,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.only(right: 20),
-                        itemCount: _filteredTours.length,
+                        itemCount: hotels.length,
                         itemBuilder: (context, index) {
-                          final tour = _filteredTours[index];
-                          final id = tour['name'].toString().replaceAll(' ', '_').toLowerCase();
-                          final isBookmarked = _bookmarkedTours.contains(id);
-                          return TourCard(
-                            name: tour['name'],
-                            location: tour['location'],
-                            imageUrl: tour['image'],
-                            rating: tour['rating'],
-                            isBookmarked: isBookmarked,
-                            onBookmark: () => _toggleBookmark(tour),
+                          final hotel = hotels[index];
+                          return HotelCard(
+                            name: hotel.name,
+                            imageUrl: hotel.imageUrl,
                             onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => PlaceDetailScreen(
-                                    name: tour['name'],
-                                    location: tour['location'],
-                                    imageUrl: tour['image'],
-                                    rating: tour['rating'],
-                                    category: tour['category'] ?? '',
-                                    description: tour['description'] ?? '',
-                                    onSave: () => _toggleBookmark(tour),
-                                    onNavigate: () {
-                                      setState(() {
-                                        _destController.text = tour['name'];
-                                        _destLat = null;
-                                        _destLon = null;
-                                      });
-                                      // Auto-save tour place to saved places if not already
-                                      if (!isBookmarked) _toggleBookmark(tour);
-                                    },
+                                  builder: (_) => HotelDetailScreen(
+                                    name: hotel.name,
+                                    imageUrl: hotel.imageUrl,
+                                    location: hotel.location,
+                                    description: hotel.description,
                                   ),
                                 ),
-                              ).then((_) => _loadBookmarks()); // Refresh on return
+                              );
                             },
                           );
                         },
                       ),
-                    ),
-              const SizedBox(height: 24),
-              SectionHeader(title: 'Popular Hotels', emoji: '🏨', onSeeAll: () {}),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 195,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(right: 20),
-                  itemCount: _hotels.length,
-                  itemBuilder: (context, index) {
-                    final hotel = _hotels[index];
-                    return HotelCard(
-                      name: hotel['name'],
-                      imageUrl: hotel['image'],
-                      rating: hotel['rating'],
-                      pricePerNight: hotel['price'],
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => HotelDetailScreen(
-                              name: hotel['name'],
-                              imageUrl: hotel['image'],
-                              rating: hotel['rating'],
-                              pricePerNight: hotel['price'],
-                              location: hotel['location'],
-                              description: hotel['description'],
-                            ),
-                          ),
-                        );
-                      },
                     );
                   },
                 ),
-              ),
               const SizedBox(height: 28),
               SectionHeader(title: 'Quick Services', emoji: '⚡'),
               const SizedBox(height: 8),
               _buildQuickActionsGrid(),
               const SizedBox(height: 24),
-              _buildPremiumBanner(),
-              const SizedBox(height: 20),
-              SectionHeader(title: 'Deals & Offers', emoji: '🎟️', onSeeAll: () {}),
-              const SizedBox(height: 8),
-              _buildDealsSection(),
-              const SizedBox(height: 16),
-              _buildAdBannerSlot(),
+              // ── Recent Routes ───────────────────────────
+              if (_recentTrips.isNotEmpty) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 20),
+                      child: Row(children: [
+                        Text('🕒 ',
+                            style: const TextStyle(fontSize: 18)),
+                        Text('Recent Routes',
+                            style: GoogleFonts.poppins(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1A1A2E))),
+                      ]),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const TripHistoryScreen()),
+                      ).then((_) => _loadRecentTrips()),
+                      child: Text('See All',
+                          style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF065A60))),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: _recentTrips.map((trip) {
+                      final src = (trip['useCurrentLocation'] as bool? ?? false)
+                          ? '📍 Your Location'
+                          : (trip['source'] as String? ?? 'Start');
+                      final dst = trip['destination'] as String? ?? 'Destination';
+                      final date = trip['date'] as String? ?? '';
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.04),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3)),
+                          ],
+                        ),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 4),
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF065A60).withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.route_rounded,
+                                color: Color(0xFF065A60), size: 20),
+                          ),
+                          title: Text(
+                            '$src → $dst',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                                fontSize: 13, fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: date.isNotEmpty
+                              ? Text(date,
+                                  style: GoogleFonts.poppins(
+                                      fontSize: 11, color: Colors.grey[500]))
+                              : null,
+                          trailing: IconButton(
+                            icon: const Icon(Icons.replay_rounded,
+                                color: Color(0xFF065A60), size: 20),
+                            tooltip: 'Re-launch',
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => MapScreen(
+                                    useCurrentLocation:
+                                        trip['useCurrentLocation'] as bool? ?? false,
+                                    source: trip['source'] as String? ?? '',
+                                    destination:
+                                        trip['destination'] as String? ?? '',
+                                    sourceLat: (trip['sourceLat'] as num?)
+                                        ?.toDouble(),
+                                    sourceLon: (trip['sourceLon'] as num?)
+                                        ?.toDouble(),
+                                    destLat:
+                                        (trip['destLat'] as num?)?.toDouble(),
+                                    destLon:
+                                        (trip['destLon'] as num?)?.toDouble(),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               const SizedBox(height: 24),
             ],
           ),
@@ -775,7 +1022,10 @@ class _HomeScreenState extends State<HomeScreen> {
               controller: _sourceController,
               style: GoogleFonts.poppins(fontSize: 14),
               onChanged: _onSourceChanged,
-              onTap: () => setState(() => _showDestSuggestions = false),
+              onTap: () {
+                setState(() => _showDestSuggestions = false);
+                _onSourceChanged(_sourceController.text);
+              },
               decoration: InputDecoration(
                 hintText: 'Start Location',
                 hintStyle: GoogleFonts.poppins(color: Colors.grey[400], fontSize: 14),
@@ -970,6 +1220,8 @@ class _HomeScreenState extends State<HomeScreen> {
       {'icon': Icons.local_police_rounded, 'label': 'Police', 'color': Colors.blue},
       {'icon': Icons.cloud_rounded, 'label': 'Weather', 'color': Colors.cyan},
       {'icon': Icons.account_balance_wallet_rounded, 'label': 'Budget', 'color': Colors.green},
+      {'icon': Icons.flight_takeoff_rounded, 'label': 'Flights', 'color': Colors.indigo},
+      {'icon': Icons.train_rounded, 'label': 'Trains', 'color': Colors.brown},
     ];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -995,12 +1247,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const WeatherScreen()));
               } else if (label == 'Budget') {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const BudgetScreen()));
+              } else if (label == 'Flights') {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const FlightScreen()));
+              } else if (label == 'Trains') {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const TrainScreen()));
               } else {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => QuickServiceScreen(
-                      serviceType: label,
+                      category: label,
                       icon: action['icon'] as IconData,
                       color: action['color'] as Color,
                     ),
@@ -1252,6 +1508,51 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFF065A60))),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const SearchScreen(hotels: []),
+        ),
+      ),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.search, color: Color(0xFF065A60), size: 20),
+            const SizedBox(width: 12),
+            Text(
+              'Where to next?',
+              style: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 14),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF065A60).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.tune_rounded, color: Color(0xFF065A60), size: 16),
+            ),
           ],
         ),
       ),

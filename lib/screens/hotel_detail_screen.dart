@@ -6,8 +6,6 @@ import 'package:url_launcher/url_launcher.dart';
 class HotelDetailScreen extends StatelessWidget {
   final String name;
   final String imageUrl;
-  final double rating;
-  final String pricePerNight;
   final String? location;
   final String? description;
 
@@ -15,8 +13,6 @@ class HotelDetailScreen extends StatelessWidget {
     super.key,
     required this.name,
     required this.imageUrl,
-    required this.rating,
-    required this.pricePerNight,
     this.location,
     this.description,
   });
@@ -74,67 +70,24 @@ class HotelDetailScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Positioned(
-                    bottom: 20,
-                    left: 20,
-                    right: 20,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF065A60),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            pricePerNight,
+                    Positioned(
+                      bottom: 20,
+                      left: 20,
+                      right: 20,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
                             style: GoogleFonts.poppins(
-                              fontSize: 14,
+                              fontSize: 26,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          name,
-                          style: GoogleFonts.poppins(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            ...List.generate(
-                              5,
-                              (i) => Icon(
-                                i < rating.floor()
-                                    ? Icons.star_rounded
-                                    : Icons.star_outline_rounded,
-                                size: 18,
-                                color: const Color(0xFFFFC107),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '$rating',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                color: Colors.white70,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -146,14 +99,13 @@ class HotelDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Quick Info Row
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       _infoTag(Icons.wifi, 'Free WiFi'),
-                      const SizedBox(width: 8),
                       _infoTag(Icons.pool, 'Pool'),
-                      const SizedBox(width: 8),
                       _infoTag(Icons.spa, 'Spa'),
-                      const SizedBox(width: 8),
                       _infoTag(Icons.restaurant, 'Restaurant'),
                     ],
                   ),

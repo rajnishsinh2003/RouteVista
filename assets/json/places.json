@@ -1,0 +1,185 @@
+{
+  "places": {
+    "andhra_pradesh": [
+      "Visakhapatnam", "Araku Valley", "Tirupati", "Vijayawada", "Amaravati",
+      "Srisailam", "Lepakshi", "Anantapur", "Rajahmundry", "Kakinada",
+      "Horsley Hills", "Chittoor", "Nellore", "Kadapa", "Papikondalu",
+      "Borra Caves", "Belum Caves", "Mangalagiri", "Guntur", "Machilipatnam"
+    ],
+    "arunachal_pradesh": [
+      "Tawang", "Ziro Valley", "Bomdila", "Itanagar", "Pasighat",
+      "Roing", "Dirang", "Sela Pass", "Namdapha National Park", "Mechuka",
+      "Anini", "Tezu", "Nuranang Falls", "Bhalukpong", "Yingkiong",
+      "Changlang", "Khonsa", "Along", "Daporijo", "Seppa"
+    ],
+    "assam": [
+      "Guwahati", "Kaziranga National Park", "Majuli", "Tezpur", "Dibrugarh",
+      "Silchar", "Jorhat", "Haflong", "Sivasagar", "Barpeta",
+      "Manas National Park", "Tinsukia", "Nagaon", "Goalpara", "Diphu",
+      "Karimganj", "Bongaigaon", "Dhemaji", "Morigaon", "Golaghat"
+    ],
+    "bihar": [
+      "Patna", "Bodh Gaya", "Nalanda", "Rajgir", "Vaishali",
+      "Gaya", "Muzaffarpur", "Bhagalpur", "Darbhanga", "Munger",
+      "Sitamarhi", "Chapra", "Ara", "Begusarai", "Motihari",
+      "Pawapuri", "Kakolat Falls", "Valmiki National Park", "Sasaram", "Buxar"
+    ],
+    "chhattisgarh": [
+      "Raipur", "Jagdalpur", "Bastar", "Chitrakote Falls", "Tirathgarh Falls",
+      "Kanger Valley National Park", "Bilaspur", "Durg", "Bhilai", "Korba",
+      "Ambikapur", "Raigarh", "Dhamtari", "Kawardha", "Rajnandgaon",
+      "Dongargarh", "Mainpat", "Sirpur", "Narayanpur", "Jashpur"
+    ],
+    "delhi": [
+      "India Gate", "Red Fort", "Qutub Minar", "Lotus Temple", "Akshardham",
+      "Humayun Tomb", "Jama Masjid", "Raj Ghat", "Connaught Place", "Chandni Chowk",
+      "Lodhi Garden", "Purana Qila", "Hauz Khas", "Dilli Haat", "National Museum",
+      "Rashtrapati Bhavan", "Jantar Mantar", "Agrasen ki Baoli", "Safdarjung Tomb", "Nehru Park"
+    ],
+    "goa": [
+      "Baga Beach", "Calangute Beach", "Anjuna Beach", "Vagator Beach", "Palolem Beach",
+      "Dudhsagar Falls", "Basilica of Bom Jesus", "Fort Aguada", "Chapora Fort", "Colva Beach",
+      "Candolim Beach", "Arambol Beach", "Morjim Beach", "Panaji", "Old Goa",
+      "Divar Island", "Butterfly Beach", "Mandovi River Cruise", "Casino Pride", "SinQ Nightclub"
+    ],
+    "gujarat": [
+      "Statue of Unity", "Somnath Temple", "Dwarka", "Rann of Kutch", "Ahmedabad",
+      "Sabarmati Ashram", "Gir National Park", "Junagadh", "Champaner-Pavagadh",
+      "Dholavira", "Modhera Sun Temple", "Palitana Temples", "Bhuj", "Mandvi Beach",
+      "Vadodara", "Laxmi Vilas Palace", "Porbandar", "Marine National Park",
+      "Zarwani Waterfalls", "Saputara"
+    ],
+    "haryana": [
+      "Gurgaon", "Kurukshetra", "Panipat", "Faridabad", "Panchkula",
+      "Morni Hills", "Sultanpur Bird Sanctuary", "Pinjore Gardens", "Karnal",
+      "Rohtak", "Hisar", "Ambala", "Yamunanagar", "Rewari", "Bhiwani",
+      "Jhajjar", "Sonipat", "Sirsa", "Fatehabad", "Mahendragarh"
+    ],
+    "himachal_pradesh": [
+      "Manali", "Shimla", "Kasol", "Dharamshala", "McLeod Ganj", "Kullu",
+      "Spiti Valley", "Dalhousie", "Chamba", "Kinnaur", "Solang Valley",
+      "Rohtang Pass", "Tirthan Valley", "Bir Billing", "Palampur", "Kufri",
+      "Naggar", "Kalpa", "Barot Valley", "Narkanda"
+    ],
+    "jammu_kashmir": [
+      "Srinagar", "Gulmarg", "Pahalgam", "Sonmarg", "Leh",
+      "Ladakh", "Kargil", "Drass", "Zanskar Valley", "Dal Lake",
+      "Nubra Valley", "Pangong Lake", "Hemmis Monastery", "Patnitop", "Kupwara",
+      "Anantnag", "Baramulla", "Pulwama", "Shopian", "Gurez Valley"
+    ],
+    "jharkhand": [
+      "Ranchi", "Jamshedpur", "Netarhat", "Deoghar", "Hazaribagh",
+      "Betla National Park", "Dhanbad", "Giridih", "Bokaro", "Palamu",
+      "Dumka", "Chaibasa", "Simdega", "Latehar", "Godda",
+      "Koderma", "Lohardaga", "Ramgarh", "Pakur", "Sahebganj"
+    ],
+    "karnataka": [
+      "Bangalore", "Mysore Palace", "Hampi", "Coorg", "Chikmagalur", "Gokarna",
+      "Badami", "Aihole", "Pattadakal", "Jog Falls", "Udupi", "Murudeshwar",
+      "Kabini", "Nagarhole National Park", "Belur", "Halebidu", "Bijapur",
+      "Dandeli", "Kudremukh", "Srirangapatna"
+    ],
+    "kerala": [
+      "Alleppey", "Munnar", "Kochi", "Thekkady", "Kovalam", "Varkala", "Wayanad",
+      "Thrissur", "Kumarakom", "Bekal Fort", "Athirappilly Falls", "Poovar Island",
+      "Periyar National Park", "Marari Beach", "Kollam", "Silent Valley",
+      "Ponmudi", "Guruvayur Temple", "Kozhikode", "Idukki"
+    ],
+    "madhya_pradesh": [
+      "Bhopal", "Indore", "Khajuraho", "Gwalior", "Ujjain",
+      "Sanchi", "Pachmarhi", "Kanha National Park", "Bandhavgarh National Park",
+      "Jabalpur", "Omkareshwar", "Maheshwar", "Chanderi", "Orchha",
+      "Mandav", "Amarkantak", "Bhimbetka", "Hoshangabad", "Seoni", "Betul"
+    ],
+    "maharashtra": [
+      "Mumbai", "Gateway of India", "Lonavala", "Khandala", "Pune", "Shirdi",
+      "Ajanta Caves", "Ellora Caves", "Aurangabad", "Nashik", "Mahabaleshwar",
+      "Panchgani", "Alibaug", "Tarkarli", "Kolhapur", "Ratnagiri",
+      "Elephanta Caves", "Matheran", "Chikhaldara", "Nagpur"
+    ],
+    "manipur": [
+      "Imphal", "Loktak Lake", "Ukhrul", "Bishnupur", "Thoubal",
+      "Senapati", "Churachandpur", "Tamenglong", "Andro Village", "Kangla Fort",
+      "Keibul Lamjao National Park", "Moreh", "Jiribam", "Sugnu", "Kakching",
+      "Sekmai", "Noney", "Kumbi", "Saikul", "Yairipok"
+    ],
+    "meghalaya": [
+      "Shillong", "Cherrapunji", "Mawlynnong", "Dawki", "Nongriat",
+      "Laitlum Canyon", "Umiam Lake", "Jowai", "Tura", "Baghmara",
+      "Williamnagar", "Nartiang", "Sohra", "Mawsynram", "Siju Caves",
+      "Balpakram", "Nongpoh", "Resubelpara", "Ampati", "Khliehriat"
+    ],
+    "mizoram": [
+      "Aizawl", "Lunglei", "Champhai", "Serchhip", "Kolasib",
+      "Saiha", "Mamit", "Lawngtlai", "Reiek", "Hmuifang",
+      "Thenzawl", "Vantawng Falls", "Phawngpui", "Dampa Tiger Reserve",
+      "Tuirial", "Saitual", "Khawzawl", "Zokhawthar", "Thingsulthliah", "Bairabi"
+    ],
+    "nagaland": [
+      "Kohima", "Dimapur", "Mon", "Mokokchung", "Tuensang",
+      "Wokha", "Zunheboto", "Phek", "Kiphire", "Longleng",
+      "Dzukou Valley", "Japfu Peak", "Khonoma Village", "Shilloi Lake",
+      "Pfutsero", "Meluri", "Aghunato", "Tseminyu", "Niuland", "Chumukedima"
+    ],
+    "nagaland": [
+      "Kohima", "Dimapur", "Mon", "Mokokchung", "Tuensang",
+      "Wokha", "Zunheboto", "Phek", "Kiphire", "Longleng",
+      "Dzukou Valley", "Japfu Peak", "Khonoma Village", "Shilloi Lake",
+      "Pfutsero", "Meluri", "Aghunato", "Tseminyu", "Niuland", "Chumukedima"
+    ],
+    "odisha": [
+      "Bhubaneswar", "Puri", "Konark", "Chilika Lake", "Cuttack",
+      "Rourkela", "Sambalpur", "Berhampur", "Balasore", "Koraput",
+      "Simlipal National Park", "Daringbadi", "Gopalpur", "Jeypore", "Rayagada",
+      "Bhadrak", "Angul", "Kendujhar", "Jagatsinghpur", "Baripada"
+    ],
+    "punjab": [
+      "Amritsar", "Golden Temple", "Jalandhar", "Ludhiana", "Patiala",
+      "Bathinda", "Pathankot", "Kapurthala", "Hoshiarpur", "Firozpur",
+      "Mohali", "Anandpur Sahib", "Faridkot", "Moga", "Sangrur",
+      "Tarn Taran", "Gurdaspur", "Ropar", "Abohar", "Malerkotla"
+    ],
+    "rajasthan": [
+      "Jaipur", "Udaipur", "Jodhpur", "Jaisalmer", "Pushkar", "Ajmer", "Mount Abu",
+      "Chittorgarh Fort", "Kumbhalgarh Fort", "Ranthambore National Park",
+      "Bikaner", "Shekhawati", "Neemrana Fort", "Alwar", "Bharatpur Bird Sanctuary",
+      "Osian", "Barmer", "Nagaur", "Sawai Madhopur", "Dungarpur"
+    ],
+    "tamil_nadu": [
+      "Chennai", "Ooty", "Kodaikanal", "Madurai", "Rameswaram", "Mahabalipuram",
+      "Kanyakumari", "Coimbatore", "Yercaud", "Tiruchirappalli", "Thanjavur",
+      "Chidambaram", "Velankanni", "Salem", "Dhanushkodi", "Coonoor",
+      "Hogenakkal Falls", "Kanchipuram", "Tirunelveli", "Pollachi"
+    ],
+    "telangana": [
+      "Hyderabad", "Charminar", "Golconda Fort", "Warangal", "Nizamabad",
+      "Karimnagar", "Khammam", "Adilabad", "Medak", "Mahbubnagar",
+      "Ramoji Film City", "Yadagirigutta", "Bhadrachalam", "Nagarjuna Sagar",
+      "Basara", "Kuntala Falls", "Pocharam Wildlife Sanctuary", "Srisailam", "Vikarabad", "Sangareddy"
+    ],
+    "tripura": [
+      "Agartala", "Ujjayanta Palace", "Neermahal", "Unakoti", "Sepahijala",
+      "Jampui Hills", "Kailashahar", "Dharmanagar", "Belonia", "Amarpur",
+      "Khowai", "Ambassa", "Teliamura", "Kamalpur", "Sabroom",
+      "Melaghar", "Boxanagar", "Panisagar", "Chailengta", "Kanchanpur"
+    ],
+    "uttar_pradesh": [
+      "Taj Mahal", "Agra Fort", "Fatehpur Sikri", "Varanasi", "Kashi Vishwanath Temple",
+      "Prayagraj", "Ayodhya", "Mathura", "Vrindavan", "Lucknow", "Bara Imambara",
+      "Jhansi", "Sarnath", "Dudhwa National Park", "Chitrakoot", "Gorakhpur",
+      "Meerut", "Kanpur", "Aligarh", "Etawah Lion Safari"
+    ],
+    "uttarakhand": [
+      "Nainital", "Mussoorie", "Rishikesh", "Haridwar", "Auli", "Jim Corbett National Park",
+      "Badrinath", "Kedarnath", "Valley of Flowers", "Almora", "Binsar", "Chopta",
+      "Tehri Lake", "Pithoragarh", "Munsiyari", "Dhanaulti", "Ranikhet", "Lansdowne",
+      "Gangotri", "Yamunotri"
+    ],
+    "west_bengal": [
+      "Kolkata", "Darjeeling", "Siliguri", "Sundarbans", "Digha",
+      "Kalimpong", "Howrah", "Murshidabad", "Malda", "Cooch Behar",
+      "Bishnupur", "Shantiniketan", "Jalpaiguri", "Bankura", "Asansol",
+      "Bardhaman", "Hooghly", "Purulia", "Alipurduar", "Raiganj"
+    ]
+  }
+}

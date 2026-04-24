@@ -1,4 +1,4 @@
-package com.example.routevista
+package com.marwadiuniversity.routevista
 
 import io.flutter.embedding.android.FlutterActivity
 

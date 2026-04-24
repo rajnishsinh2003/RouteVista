@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'map_screen.dart';
+import 'place_detail_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -262,9 +263,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       onTap: () => _showPOIInfo(p),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.white, shape: BoxShape.circle,
+                          color: Theme.of(context).cardColor, shape: BoxShape.circle,
                           border: Border.all(color: _getMarkerColor(p['type'] as String), width: 2),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)],
+                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)],
                         ),
                         child: Icon(_getMarkerIcon(p['type'] as String), size: 18, color: _getMarkerColor(p['type'] as String)),
                       ),
@@ -281,9 +282,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
             child: Container(
               height: 46,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(14),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)],
               ),
               child: TextField(
                 controller: _searchController,
@@ -293,8 +294,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   hintText: 'Search a city or place...',
-                  hintStyle: GoogleFonts.poppins(color: Colors.grey[400], fontSize: 14),
-                  prefixIcon: const Icon(Icons.search, color: Color(0xFF065A60), size: 20),
+                  hintStyle: GoogleFonts.poppins(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4), fontSize: 14),
+                  prefixIcon: Icon(Icons.search, color: Theme.of(context).primaryColor, size: 20),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.close, size: 18, color: Colors.grey),
@@ -329,16 +330,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       margin: const EdgeInsets.only(right: 8),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF065A60) : Colors.white,
+                        color: isSelected ? Theme.of(context).primaryColor : Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)],
                       ),
                       child: Center(
                         child: Text(cat,
                             style: GoogleFonts.poppins(
-                              fontSize: 13, fontWeight: FontWeight.w600,
-                              color: isSelected ? Colors.white : Colors.grey[700],
-                            )),
+                                fontSize: 13, fontWeight: FontWeight.w600,
+                                color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                              )),
                       ),
                     ),
                   );
@@ -355,8 +356,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white, borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)],
+                    color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(20),
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)],
                   ),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
@@ -403,8 +404,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white, borderRadius: BorderRadius.circular(16),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 6)],
+                    color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(16),
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 6)],
                   ),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(Icons.search_off, color: Colors.grey[400], size: 20),
@@ -422,8 +423,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF065A60), borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 6)],
+                color: Theme.of(context).primaryColor, borderRadius: BorderRadius.circular(20),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 6)],
               ),
               child: Text('${_pois.length} places found',
                   style: GoogleFonts.poppins(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
@@ -439,10 +440,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 child: Container(
                   width: 46, height: 46,
                   decoration: BoxDecoration(
-                    color: Colors.white, shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 8)],
+                    color: Theme.of(context).cardColor, shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8)],
                   ),
-                  child: const Icon(Icons.my_location, color: Color(0xFF065A60), size: 22),
+                  child: Icon(Icons.my_location, color: Theme.of(context).primaryColor, size: 22),
                 ),
               ),
             ),
@@ -480,7 +481,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(poi['name'] as String,
-                      style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w700)),
+                      style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
                   const SizedBox(height: 4),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -501,13 +502,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
               Expanded(
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF065A60), foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).primaryColor, foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 12), elevation: 0,
                   ),
                   icon: const Icon(Icons.navigation_rounded, size: 18),
-                  label: Text('Navigate Here',
-                      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                  label: Text('Navigate',
+                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
                   onPressed: () {
                     Navigator.pop(context);
                     Navigator.push(context, MaterialPageRoute(
@@ -524,16 +525,41 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   },
                 ),
               ),
-              const SizedBox(width: 10),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFF065A60)),
-                  foregroundColor: const Color(0xFF065A60),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Theme.of(context).primaryColor),
+                    foregroundColor: Theme.of(context).primaryColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  icon: const Icon(Icons.info_outline, size: 18),
+                  label: Text('Details', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => PlaceDetailScreen(
+                        name: poi['name'] as String,
+                        location: 'Nearby ${_mapCenter.latitude.toStringAsFixed(2)}, ${_mapCenter.longitude.toStringAsFixed(2)}',
+                        imageUrl: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400', 
+                        rating: 4.0,
+                        category: poi['type'] as String,
+                        description: '${poi['name']} is a ${poi['type'].toString().toLowerCase()} found during your exploration.',
+                      ),
+                    ));
+                  },
                 ),
-                icon: const Icon(Icons.map_outlined, size: 18),
-                label: Text('View', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.grey[300]!),
+                  foregroundColor: Colors.grey[700],
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                ),
+                child: const Icon(Icons.map_outlined, size: 18),
                 onPressed: () {
                   Navigator.pop(context);
                   _mapController.move(

@@ -1,18 +1,24 @@
 {
   "project_info": {
     "project_number": "325074376387",
+    "firebase_url": "https://routevista-96fac-default-rtdb.firebaseio.com",
     "project_id": "routevista-96fac",
     "storage_bucket": "routevista-96fac.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:325074376387:android:e14bcfe1adc4919544b476",
+        "mobilesdk_app_id": "1:325074376387:android:0b8c1e791de856c044b476",
         "android_client_info": {
-          "package_name": "com.example.routevista"
+          "package_name": "com.marwadiuniversity.routevista"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "325074376387-fs31a6jp1uijr6qkddgrri4if9ma8lfc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAG_A5VoQBndXxY0U1tpZJREP16XQ_gyVE"
@@ -20,7 +26,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "325074376387-fs31a6jp1uijr6qkddgrri4if9ma8lfc.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

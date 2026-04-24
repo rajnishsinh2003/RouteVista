@@ -232,7 +232,31 @@ class _SplashScreenState extends State<SplashScreen>
                   },
                 ),
               if (!_isChecking && !_hasInternet) _buildNoInternetWidget(),
-              const SizedBox(height: 40),
+              const Spacer(),
+              // Powered by Marwadi University
+              Column(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset(
+                      'assets/icon/MarwadiUniversity.png',
+                      height: 50,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Powered by Marwadi University',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.white54,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),

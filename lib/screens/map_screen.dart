@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:uuid/uuid.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/poi.dart';
 import '../services/poi_service.dart';
 import '../services/navigation_service.dart';
@@ -96,6 +97,14 @@ class _MapScreenState extends State<MapScreen> {
   FuelType selectedFuel = FuelType.petrol;
   double currentFuelLitres = 0;
   double vehicleAverage = 15;
+
+  // ── Transport Mode ───────────────────────────
+  String _transportMode = 'driving'; // driving, walking, cycling
+  static const Map<String, Map<String, dynamic>> _transportModes = {
+    'driving': {'icon': '🚗', 'label': 'Drive',  'color': Color(0xFF065A60)},
+    'walking': {'icon': '🚶', 'label': 'Walk',   'color': Color(0xFF8E44AD)},
+    'cycling': {'icon': '🚲', 'label': 'Cycle',  'color': Color(0xFFE67E22)},
+  };
   Map<String, dynamic> fuelStatus = {};
 
   // ── Map layer switcher ───────────────────────
@@ -158,10 +167,40 @@ class _MapScreenState extends State<MapScreen> {
 
   // ── TTS initialisation ───────────────────────
   Future<void> _initTts() async {
-    await _tts.setLanguage('en-IN');
-    await _tts.setSpeechRate(0.45);
-    await _tts.setVolume(1.0);
-    await _tts.setPitch(1.0);
+    final prefs = await SharedPreferences.getInstance();
+    String lang = prefs.getString('language_pref') ?? 'en-IN';
+    
+    // Cleanup/Normalize lang code for some engines
+    if (lang == 'en-GB') lang = 'en-IN'; // Prefer Indian accent if possible
+
+    try {
+      // Check if language is available
+      bool isAvailable = await _tts.isLanguageAvailable(lang);
+      
+      if (!isAvailable) {
+        debugPrint('⚠️ Language $lang not strictly available. Probing alternates...');
+        // Fallback checks for Gujarati which might be 'gu' or 'gu-IN'
+        if (lang.startsWith('gu')) {
+          if (await _tts.isLanguageAvailable('gu-IN')) lang = 'gu-IN';
+          else if (await _tts.isLanguageAvailable('gu')) lang = 'gu';
+        } else if (lang.startsWith('hi')) {
+          if (await _tts.isLanguageAvailable('hi-IN')) lang = 'hi-IN';
+          else if (await _tts.isLanguageAvailable('hi')) lang = 'hi';
+        }
+      }
+
+      await _tts.setLanguage(lang);
+      await _tts.setSpeechRate(0.45);
+      await _tts.setVolume(1.0);
+      await _tts.setPitch(1.0);
+      
+      // On some Androids, you must set the engine explicitly for better Indian support
+      if (!kIsWeb && Platform.isAndroid) {
+        await _tts.setEngine('com.google.android.tts');
+      }
+    } catch (e) {
+      debugPrint('TTS Init Error: $e');
+    }
   }
 
   Future<void> _speak(String text) async {
@@ -248,6 +287,7 @@ class _MapScreenState extends State<MapScreen> {
     // Start POI fetch after map is shown
     if (routePoints.isNotEmpty) {
       _startPoiFetch();
+      _saveToHistory();
     }
   }
 
@@ -411,8 +451,11 @@ class _MapScreenState extends State<MapScreen> {
       }
       coordsPath += '${end.longitude},${end.latitude}';
 
+      // Map internal mode to OSRM profile
+      final profile = _transportMode == 'walking' ? 'foot' : (_transportMode == 'cycling' ? 'bike' : 'driving');
+      
       final url = Uri.parse(
-        'https://router.project-osrm.org/route/v1/driving/$coordsPath'
+        'https://router.project-osrm.org/route/v1/$profile/$coordsPath'
         '?overview=full&geometries=geojson&steps=true&annotations=false',
       );
       final res = await http.get(url);
@@ -424,9 +467,13 @@ class _MapScreenState extends State<MapScreen> {
         // --- Parse step-level turn instructions ---
         final List<NavigationStep> steps = [];
         final legs = route['legs'] as List? ?? [];
+        final prefs = await SharedPreferences.getInstance();
+        final langCode = prefs.getString('language_pref') ?? 'en-IN';
+
         for (final leg in legs) {
           final legSteps = leg['steps'] as List? ?? [];
           for (final s in legSteps) {
+            s['langCode'] = langCode;
             steps.add(NavigationStep.fromOsrm(s as Map<String, dynamic>));
           }
         }
@@ -436,24 +483,35 @@ class _MapScreenState extends State<MapScreen> {
               .map((c) => LatLng(c[1].toDouble(), c[0].toDouble()))
               .toList();
               
+          final double distKm = (route['distance'] as num).toDouble() / 1000;
+          double duration;
+
+          // Realistic duration based on mode (OSRM demo server often returns car time for all profiles)
+          if (_transportMode == 'walking') {
+            duration = distKm / 5.0; // 5 km/h
+          } else if (_transportMode == 'cycling') {
+            duration = distKm / 18.0; // 18 km/h
+          } else {
+            duration = (route['duration'] as num).toDouble() / 3600; // API provided duration for driving
+          }
+
           if (retainTraveled && isNavigating) {
             _remainingPoints = newRoutePoints;
             routePoints = [..._traveledPoints, ..._remainingPoints];
             _currentRouteIndex = _traveledPoints.isNotEmpty ? _traveledPoints.length - 1 : 0;
             
-            double traveledKm = 0;
+            double traveledKmTotal = 0;
             for (int i = 0; i < _traveledPoints.length - 1; i++) {
-              traveledKm += NavigationService.haversineKm(_traveledPoints[i], _traveledPoints[i + 1]);
+              traveledKmTotal += NavigationService.haversineKm(_traveledPoints[i], _traveledPoints[i + 1]);
             }
-            double rem = route['distance'] / 1000;
-            totalDistKm = traveledKm + rem;
-            remainingKm = rem;
-            durationHrs = route['duration'] / 3600; // Remaining duration
+            totalDistKm = traveledKmTotal + distKm;
+            remainingKm = distKm;
+            durationHrs = duration; // Remaining duration
           } else {
             routePoints = newRoutePoints;
-            totalDistKm = route['distance'] / 1000;
+            totalDistKm = distKm;
             remainingKm = totalDistKm;
-            durationHrs = route['duration'] / 3600;
+            durationHrs = duration;
             _traveledPoints = [];
             _remainingPoints = List.of(routePoints);
             _currentRouteIndex = 0;
@@ -719,6 +777,45 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  Future<void> _saveToHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('saved_trips') ?? '[]';
+      List<Map<String, dynamic>> trips = List<Map<String, dynamic>>.from(json.decode(raw));
+      
+      // Prevent duplicates (same source/dest on same day)
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      bool exists = trips.any((t) => 
+        t['source'] == widget.source && 
+        t['destination'] == widget.destination &&
+        (t['date'] ?? '').contains(today)
+      );
+      
+      if (exists) return;
+
+      trips.insert(0, {
+        'source': widget.source,
+        'destination': widget.destination,
+        'sourceLat': sourceLatLng?.latitude,
+        'sourceLon': sourceLatLng?.longitude,
+        'destLat': destinationLatLng?.latitude,
+        'destLon': destinationLatLng?.longitude,
+        'useCurrentLocation': widget.useCurrentLocation,
+        'date': DateTime.now().toIso8601String(),
+        'distance': totalDistKm,
+        'duration': durationHrs,
+        'mode': _transportMode,
+      });
+
+      // Keep only last 20
+      if (trips.length > 20) trips = trips.sublist(0, 20);
+
+      await prefs.setString('saved_trips', json.encode(trips));
+    } catch (e) {
+      debugPrint('Save history error: $e');
+    }
+  }
+
   // ── Core location update handler ─────────────
   void _onLocationUpdate(Position pos) {
     final newLoc = LatLng(pos.latitude, pos.longitude);
@@ -822,6 +919,22 @@ class _MapScreenState extends State<MapScreen> {
         remainingKm = remKm;
         _traveledPoints = traveled;
         _remainingPoints = remaining;
+        
+        // Dynamically update duration based on remaining distance
+        if (_transportMode == 'walking') {
+          durationHrs = remKm / 5.0;
+        } else if (_transportMode == 'cycling') {
+          durationHrs = remKm / 18.0;
+        } else {
+          // For driving, we use a simple proportion of the total distance
+          // but we must be careful not to update durationHrs in a way that 
+          // feeds back into itself. A better way is using a constant speed 
+          // derived from the original route or a default like 40km/h.
+          if (totalDistKm > 0) {
+            // Estimate based on 40km/h average for driving if we're moving
+            durationHrs = remKm / 40.0; 
+          }
+        }
       });
     }
 
@@ -885,49 +998,112 @@ class _MapScreenState extends State<MapScreen> {
       tileCount += ((x1 - x0).abs() + 1) * ((y1 - y0).abs() + 1);
     }
 
-    final confirm = await showDialog<bool>(
+    // ── Ask for optional route name ─────────────
+    final nameController = TextEditingController(
+      text: '${widget.source.split(',')[0]} → ${widget.destination.split(',')[0]}',
+    );
+    final nameResult = await showDialog<String?>(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(children: [
           const Icon(Icons.download_for_offline, color: Colors.orange),
           const SizedBox(width: 8),
-          Text('Save Route Offline', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
+          Flexible(child: Text('Save Route Offline', style: GoogleFonts.poppins(fontWeight: FontWeight.w700))),
         ]),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Download map tiles so this route works without internet.', style: GoogleFonts.poppins(fontSize: 13)),
+            Text('Route name (optional):', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
+            const SizedBox(height: 6),
+            TextField(
+              controller: nameController,
+              style: GoogleFonts.poppins(fontSize: 13),
+              decoration: InputDecoration(
+                hintText: 'e.g. Weekend Goa Trip',
+                hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[400]),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFF065A60), width: 2),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+            ),
             const SizedBox(height: 10),
-            Text('Tiles: ~$tileCount\nSize: ~${(tileCount * 15 / 1024).toStringAsFixed(1)} MB\nExpires: 30 days',
-                style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
+            Text('Tiles: ~$tileCount  •  ~${(tileCount * 15 / 1024).toStringAsFixed(1)} MB  •  30 days',
+                style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500])),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, null), child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(context, nameController.text.trim()),
             child: const Text('Download'),
           ),
         ],
       ),
     );
-    if (confirm != true) return;
+    if (nameResult == null) return;
+    final routeName = nameResult.isEmpty
+        ? '${widget.source.split(',')[0]} → ${widget.destination.split(',')[0]}'
+        : nameResult;
+    final confirm = true;
 
     setState(() { _isSavingOffline = true; _downloadProgress = 0; _downloadTotal = tileCount; });
 
     final cacheManager = DefaultCacheManager();
+    // Bounding box with buffer (approx 0.05 degrees)
+    minLat = math.min(sourceLatLng!.latitude, destinationLatLng!.latitude) - 0.05;
+    maxLat = math.max(sourceLatLng!.latitude, destinationLatLng!.latitude) + 0.05;
+    minLon = math.min(sourceLatLng!.longitude, destinationLatLng!.longitude) - 0.05;
+    maxLon = math.max(sourceLatLng!.longitude, destinationLatLng!.longitude) + 0.05;
+
+    // Expand bounding box with all route points
+    for (var p in routePoints) {
+      if (p.latitude < minLat) minLat = p.latitude;
+      if (p.latitude > maxLat) maxLat = p.latitude;
+      if (p.longitude < minLon) minLon = p.longitude;
+      if (p.longitude > maxLon) maxLon = p.longitude;
+    }
+    int totalTiles = 0;
+    
+    // First pass: Calculate total tiles to download
+    for (int z = 10; z <= 16; z++) {
+      final x0 = ((minLon + 180) / 360 * (1 << z)).floor();
+      final x1 = ((maxLon + 180) / 360 * (1 << z)).floor();
+      final y0 = ((1 - (math.log(math.tan(maxLat * math.pi / 180) + 1 / math.cos(maxLat * math.pi / 180)) / math.pi)) / 2 * (1 << z)).floor();
+      final y1 = ((1 - (math.log(math.tan(minLat * math.pi / 180) + 1 / math.cos(minLat * math.pi / 180)) / math.pi)) / 2 * (1 << z)).floor();
+      totalTiles += (x1 - x0 + 1) * (y1 - y0 + 1);
+    }
+
+    if (mounted) setState(() { _downloadTotal = totalTiles; _downloadProgress = 0; });
+
     int done = 0;
-    for (int z = 7; z <= 14; z++) {
+    // Limit to prevent huge downloads (safety cap)
+    if (totalTiles > 500) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Route too long for full detail offline. Saving base maps only.')));
+      }
+    }
+
+    for (int z = 10; z <= (totalTiles > 500 ? 13 : 16); z++) {
       final x0 = ((minLon + 180) / 360 * (1 << z)).floor();
       final x1 = ((maxLon + 180) / 360 * (1 << z)).floor();
       final y0 = ((1 - (math.log(math.tan(maxLat * math.pi / 180) + 1 / math.cos(maxLat * math.pi / 180)) / math.pi)) / 2 * (1 << z)).floor();
       final y1 = ((1 - (math.log(math.tan(minLat * math.pi / 180) + 1 / math.cos(minLat * math.pi / 180)) / math.pi)) / 2 * (1 << z)).floor();
       for (int x = x0; x <= x1; x++) {
         for (int y = y0; y <= y1; y++) {
-          try { await cacheManager.downloadFile('https://basemaps.cartocdn.com/light_all/$z/$x/$y.png'); } catch (_) {}
+          try {
+            final url = _layerTiles[_selectedLayer]!
+                .replaceAll('{z}', z.toString())
+                .replaceAll('{x}', x.toString())
+                .replaceAll('{y}', y.toString())
+                .replaceAll('{r}', '');
+            await cacheManager.downloadFile(url);
+          } catch (_) {}
           done++;
           if (mounted) setState(() => _downloadProgress = done);
         }
@@ -939,8 +1115,10 @@ class _MapScreenState extends State<MapScreen> {
     final routes = List<Map<String, dynamic>>.from(json.decode(routesJson));
     routes.insert(0, {
       'id': _uuid.v4(),
+      'name': routeName,
       'source': widget.source,
       'destination': widget.destination,
+      'transportMode': _transportMode,
       'points': routePoints.map((p) => {'lat': p.latitude, 'lon': p.longitude}).toList(),
       'distKm': totalDistKm,
       'durationHrs': durationHrs,
@@ -957,6 +1135,27 @@ class _MapScreenState extends State<MapScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ));
     }
+  }
+
+  void _shareRoute() {
+    if (sourceLatLng == null || destinationLatLng == null) return;
+    
+    // Attempt to extract purely string names instead of coordinates if possible
+    final String sourceName = widget.source.split(',')[0];
+    final String destName = widget.destination.split(',')[0];
+    
+    final String dist = totalDistKm.toStringAsFixed(1);
+    final String time = durationHrs.toStringAsFixed(1);
+    final String modeLabel = _transportModes[_transportMode]?['label'] ?? 'Drive';
+    
+    final String message = "🗺️ RouteVista Planned Route:\n"
+        "📍 From: $sourceName\n"
+        "🏁 To: $destName\n"
+        "📏 Distance: $dist km\n"
+        "⏱️ Time: ~$time h ($modeLabel)\n\n"
+        "Plan your next trip with RouteVista!";
+        
+    Share.share(message);
   }
 
   void _showErrorDialog(String title, String body) {
@@ -1127,64 +1326,130 @@ class _MapScreenState extends State<MapScreen> {
               child: SafeArea(child: Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-                    _infoCol(Icons.timer, "${durationHrs.toStringAsFixed(1)} h"),
-                    _infoCol(Icons.speed, "${totalDistKm.toInt()} km"),
-                    if (isNavigating) _infoCol(Icons.near_me, "${remainingKm.toStringAsFixed(1)} km"),
-                    _infoCol(Icons.cloud, "${destWeather?.temp ?? '-'}°C"),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isNavigating ? Colors.redAccent : const Color(0xFF065A60),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                child: Padding(padding: const EdgeInsets.all(14),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Source -> Destination label
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.radio_button_checked, size: 14, color: Color(0xFF065A60)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                widget.source.split(',')[0],
+                                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A2E)),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 10),
+                              child: Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.grey),
+                            ),
+                            const Icon(Icons.location_on, size: 14, color: Colors.redAccent),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(
+                                widget.destination.split(',')[0],
+                                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A2E)),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      onPressed: _toggleNavigation,
-                      child: Text(isNavigating ? "STOP" : "NAV",
-                          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13)),
-                    ),
-                    if (isNavigating)
-                      IconButton(
-                        icon: Icon(_isMuted ? Icons.volume_off : Icons.volume_up, 
-                            color: _isMuted ? Colors.redAccent : const Color(0xFF065A60)),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () {
-                          setState(() => _isMuted = !_isMuted);
-                          if (_isMuted) {
-                            _tts.stop();
-                          } else if (_currentInstruction.isNotEmpty) {
-                            _speak(_currentInstruction);
-                          }
-                        },
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Divider(height: 1, thickness: 0.5),
                       ),
-                    // Offline save button — only after route found
-                    if (routePoints.isNotEmpty && !_routeSaved)
-                      _isSavingOffline
-                          ? Column(mainAxisSize: MainAxisSize.min, children: [
-                              SizedBox(width: 22, height: 22,
-                                child: CircularProgressIndicator(
-                                  value: _downloadTotal > 0 ? _downloadProgress / _downloadTotal : null,
-                                  strokeWidth: 2.5, color: Colors.orange)),
-                              Text('$_downloadProgress/$_downloadTotal', style: const TextStyle(fontSize: 8)),
-                            ])
-                          : IconButton(
-                              icon: const Icon(Icons.download_for_offline_outlined, color: Colors.orange),
-                              tooltip: 'Save for offline', onPressed: _saveRouteOffline,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints()),
-                    if (_routeSaved)
-                      const Tooltip(message: 'Saved offline', child: Icon(Icons.offline_pin, color: Colors.green)),
-                  ]),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start, 
+                          children: [
+                            _infoCol(Icons.timer, "${durationHrs.toStringAsFixed(1)} h"),
+                            const SizedBox(width: 10),
+                            _infoCol(Icons.speed, "${totalDistKm.toInt()} km"),
+                            const SizedBox(width: 10),
+                            if (isNavigating) ...[
+                              _infoCol(Icons.near_me, "${remainingKm.toStringAsFixed(1)} km"),
+                              const SizedBox(width: 10),
+                            ],
+                            _infoCol(Icons.cloud, "${destWeather?.temp ?? '-'}°C"),
+                            const SizedBox(width: 10),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isNavigating ? Colors.redAccent : const Color(0xFF065A60),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              onPressed: _toggleNavigation,
+                              child: Text(isNavigating ? "STOP" : "NAV",
+                                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13)),
+                            ),
+                            const SizedBox(width: 8),
+                            if (isNavigating) ...[
+                              IconButton(
+                                icon: Icon(_isMuted ? Icons.volume_off : Icons.volume_up, 
+                                    color: _isMuted ? Colors.redAccent : const Color(0xFF065A60)),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: () {
+                                  setState(() => _isMuted = !_isMuted);
+                                  if (_isMuted) {
+                                    _tts.stop();
+                                  } else if (_currentInstruction.isNotEmpty) {
+                                    _speak(_currentInstruction);
+                                  }
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            // Share button — more prominent visibility
+                            if (routePoints.isNotEmpty) ...[
+                              IconButton(
+                                icon: const Icon(Icons.share_outlined, color: Colors.blueAccent),
+                                tooltip: 'Share Route',
+                                onPressed: _shareRoute,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints()),
+                              const SizedBox(width: 8),
+                            ],
+                            // Offline save button — after share
+                            if (routePoints.isNotEmpty && !_routeSaved) ...[
+                              _isSavingOffline
+                                  ? Column(mainAxisSize: MainAxisSize.min, children: [
+                                      SizedBox(width: 22, height: 22,
+                                        child: CircularProgressIndicator(
+                                          value: _downloadTotal > 0 ? _downloadProgress / _downloadTotal : null,
+                                          strokeWidth: 2.5, color: Colors.orange)),
+                                      Text('$_downloadProgress/$_downloadTotal', style: const TextStyle(fontSize: 8)),
+                                    ])
+                                  : IconButton(
+                                      icon: const Icon(Icons.download_for_offline_outlined, color: Colors.orange),
+                                      tooltip: 'Save for offline', onPressed: _saveRouteOffline,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints()),
+                            ],
+                            if (_routeSaved) ...[
+                              const Tooltip(message: 'Saved offline', child: Icon(Icons.offline_pin, color: Colors.green)),
+                            ],
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
-              )),
-            ),
+              ),
+            )),
+          ),
 
           // ── POI FETCH PROGRESS BAR ────────────
           if (_isFetchingPois)
             Positioned(
-              top: (isOffline || isGpsOff) ? 120 : 100,
+              top: (isOffline || isGpsOff) ? 170 : 150,
               left: 12, right: 12,
               child: SafeArea(child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -1221,7 +1486,7 @@ class _MapScreenState extends State<MapScreen> {
           // ── POI FILTER BAR ────────────────────
           if (_poisLoaded && _allPois.isNotEmpty)
             Positioned(
-              top: _isFetchingPois ? 180 : ((isOffline || isGpsOff) ? 120 : 100),
+              top: _isFetchingPois ? 230 : ((isOffline || isGpsOff) ? 170 : 150),
               left: 0, right: 0,
               child: SafeArea(child: PoiFilterBar(
                 allPois: _allPois,
@@ -1241,7 +1506,7 @@ class _MapScreenState extends State<MapScreen> {
           // ── POI COUNT CHIP ────────────────────
           if (_poisLoaded)
             Positioned(
-              top: _isFetchingPois ? 230 : ((isOffline || isGpsOff) ? 170 : 150),
+              top: _isFetchingPois ? 280 : ((isOffline || isGpsOff) ? 220 : 200),
               right: 12,
               child: SafeArea(child: GestureDetector(
                 onTap: () => setState(() => _showPoiList = !_showPoiList),
@@ -1276,6 +1541,86 @@ class _MapScreenState extends State<MapScreen> {
                 boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 6)],
               ),
               child: IconButton(icon: const Icon(Icons.arrow_back, size: 20), onPressed: () => Navigator.pop(context)),
+            ),
+          ),
+
+          // ── TRANSPORT MODE SELECTOR ───────────
+          Positioned(
+            bottom: MediaQuery.of(context).size.height * 0.25,
+            left: 12,
+            child: SafeArea(
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: _transportModes.entries.map((entry) {
+                    final isSelected = _transportMode == entry.key;
+                    final modeColor = entry.value['color'] as Color;
+                    return GestureDetector(
+                      onTap: () async {
+                        if (_transportMode == entry.key) return;
+                        setState(() => _transportMode = entry.key);
+                        if (sourceLatLng != null && destinationLatLng != null) {
+                          setState(() { isLoading = true; statusMessage = 'Recalculating for ${entry.value["label"]}...'; });
+                          await _fetchRoute(
+                            (isNavigating && currentLocation != null) ? currentLocation! : sourceLatLng!,
+                            destinationLatLng!,
+                          );
+                          _calculateBudget();
+                          setState(() => isLoading = false);
+                          if (routePoints.isNotEmpty && !isNavigating) {
+                            mapController.fitCamera(CameraFit.bounds(
+                              bounds: LatLngBounds.fromPoints(routePoints),
+                              padding: const EdgeInsets.all(50),
+                            ));
+                          }
+                        }
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(vertical: 3),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: isSelected ? modeColor.withValues(alpha: 0.12) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          border: isSelected
+                              ? Border.all(color: modeColor, width: 1.5)
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              entry.value['icon'] as String,
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              entry.value['label'] as String,
+                              style: GoogleFonts.poppins(
+                                fontSize: 9,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                color: isSelected ? modeColor : Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
           ),
 
@@ -1409,7 +1754,50 @@ class _MapScreenState extends State<MapScreen> {
                       width: 40, height: 4,
                       decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
                     )),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
+
+                    // ── TRIP SUMMARY ────────────────
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF065A60).withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFF065A60).withOpacity(0.1)),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _summaryItem('Distance', '${totalDistKm.toStringAsFixed(1)} km', Icons.straighten),
+                              _summaryItem('Time', '${durationHrs.toStringAsFixed(1)} h', Icons.schedule),
+                              _summaryItem('Budget', '₹${budget.total.toStringAsFixed(0)}', Icons.payments_outlined),
+                            ],
+                          ),
+                          if (fuelStatus.isNotEmpty && !fuelStatus['is_enough']) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Low Fuel! Range: ${fuelStatus['range_km'].toStringAsFixed(0)} km',
+                                    style: GoogleFonts.poppins(fontSize: 11, color: Colors.red[900], fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
 
                     // ── All Places List ──────────
                     Row(children: [
@@ -1696,6 +2084,17 @@ class _MapScreenState extends State<MapScreen> {
       Text("₹${v.toStringAsFixed(0)}", style: GoogleFonts.poppins(fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500, color: isTotal ? const Color(0xFF00BFA6) : Colors.white, fontSize: isTotal ? 16 : 13)),
     ]),
   );
+
+  Widget _summaryItem(String label, String value, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, size: 18, color: const Color(0xFF065A60)),
+        const SizedBox(height: 4),
+        Text(value, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF1A1A2E))),
+        Text(label, style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[600])),
+      ],
+    );
+  }
 }  // END _MapScreenState
 
 // ════════════════════════════════════════════

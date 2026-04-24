@@ -1,3 +1,12 @@
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+// your existing code ↓↓↓
+
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")

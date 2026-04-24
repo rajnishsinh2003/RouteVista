@@ -1,3 +1,5 @@
+rootProject.name = "RouteVista"
+
 pluginManagement {
     val flutterSdkPath =
         run {

@@ -201,13 +201,27 @@ class _OfflineRoutesScreenState extends State<OfflineRoutesScreen> {
                 const Icon(Icons.offline_pin,
                     color: Colors.white70, size: 15),
                 const SizedBox(width: 6),
-                Text('Offline Route',
-                    style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.4)),
+                Text(
+                  (route['name'] as String?)?.isNotEmpty == true
+                      ? (route['name'] as String)
+                      : 'Offline Route',
+                  style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.4),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const Spacer(),
+                // Transport mode badge
+                if (route['transportMode'] != null) ...[
+                  Text(
+                    _modeEmoji(route['transportMode'] as String),
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(width: 6),
+                ],
                 Text(_formatDate(route['savedAt'] as String?),
                     style: GoogleFonts.poppins(
                         fontSize: 11, color: Colors.white70)),
@@ -275,6 +289,8 @@ class _OfflineRoutesScreenState extends State<OfflineRoutesScreen> {
                       _statChip(Icons.schedule,
                           _formatDuration(durationHrs)),
                     _statChip(Icons.map, '$pointCount pts'),
+                    if (route['transportMode'] != null)
+                      _modeChip(route['transportMode'] as String),
                   ],
                 ),
 
@@ -344,6 +360,39 @@ class _OfflineRoutesScreenState extends State<OfflineRoutesScreen> {
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF1A1A2E))),
       ]),
+    );
+  }
+
+  String _modeEmoji(String mode) {
+    switch (mode) {
+      case 'walking': return '🚶 Walk';
+      case 'cycling': return '🚲 Cycle';
+      default:        return '🚗 Drive';
+    }
+  }
+
+  Color _modeColor(String mode) {
+    switch (mode) {
+      case 'walking': return const Color(0xFF8E44AD);
+      case 'cycling': return const Color(0xFFE67E22);
+      default:        return const Color(0xFF065A60);
+    }
+  }
+
+  Widget _modeChip(String mode) {
+    final color = _modeColor(mode);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        _modeEmoji(mode),
+        style: GoogleFonts.poppins(
+            fontSize: 12, fontWeight: FontWeight.w600, color: color),
+      ),
     );
   }
 }
