@@ -32,19 +32,39 @@
 ---
 
 ## 📸 Screenshots
-
-<!-- ADD SCREENSHOTS HERE -->
-<!-- Replace the placeholders below with your actual screenshot URLs or local paths -->
-
-| Onboarding | Home Screen | Map Exploration |
-| :---: | :---: | :---: |
-| ![Onboarding](https://via.placeholder.com/200x400?text=Onboarding+Screen) | ![Home](https://via.placeholder.com/200x400?text=Home+Screen) | ![Map](https://via.placeholder.com/200x400?text=Map+Screen) |
-
-| AI Chatbot | Profile | Weather |
-| :---: | :---: | :---: |
-| ![Chatbot](https://via.placeholder.com/200x400?text=AI+Chatbot) | ![Profile](https://via.placeholder.com/200x400?text=Profile+Screen) | ![Weather](https://via.placeholder.com/200x400?text=Weather+Updates) |
-
----
+OnBoarding
+<p align="center">
+<img width="450" height="1000" alt="Onboarding-1" src="https://github.com/user-attachments/assets/3b4a66bc-45ec-4ace-8e31-97fd9d0a92dc" />
+<img width="450" height="1000" alt="Onboarding" src="https://github.com/user-attachments/assets/ef25a4b2-8973-4465-8021-c55adafb57a7" />
+</p>
+Home
+<p align="center">
+<img width="450" height="1000" alt="Home" src="https://github.com/user-attachments/assets/b491c26c-a7e5-446d-a285-b8a4a60e3e2f" />
+</p>
+Quick Services
+<p align="center">
+<img width="450" height="1000" alt="Quick-Services" src="https://github.com/user-attachments/assets/8cab2a5d-9074-48c3-a6b8-5b9ea62760fc" />
+</p>
+RouteVista-AI
+<p align="center">
+<img width="450" height="1000" alt="RouteVista-AI" src="https://github.com/user-attachments/assets/7a36f3b0-501d-48e9-8388-57b307fd9981" />
+</p>
+Saved 
+<p align="center">
+<img width="450" height="1000" alt="Saved-Screen" src="https://github.com/user-attachments/assets/13969ab0-3e60-4a4d-9fc6-8da09872cd04" />
+</p>
+Weather
+<p align="center">
+<img width="450" height="1000" alt="Weather" src="https://github.com/user-attachments/assets/d8bb22f2-63d9-464a-b7bc-07845eaa1b95" />
+</p>
+Monthly Planner
+<p align="center">
+<img width="450" height="1000" alt="Monthly-Tour-Planner" src="https://github.com/user-attachments/assets/874b0ac2-6ef8-4b6c-bf04-71c6f06efddd" />
+</p>
+Profile
+<p align="center">
+<img width="450" height="1000" alt="Profile" src="https://github.com/user-attachments/assets/53ccae4a-dcdd-4cf5-92ca-651c82676f9c" />
+</p>
 
 ## 🛠️ Tech Stack
 
@@ -68,7 +88,7 @@
 ### Steps
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/your-username/RouteVista.git
+   git clone https://github.com/rajnishsinh2003/RouteVista.git
    cd RouteVista
    ```
 
@@ -93,7 +113,6 @@
 
 ## 🤝 Contribution
 Contributions are welcome! Feel free to open issues or submit pull requests to make RouteVista even better.
-
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
